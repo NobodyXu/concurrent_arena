@@ -25,7 +25,12 @@ pub struct Arena<T, const BITARRAY_LEN: usize, const LEN: usize> {
 }
 
 impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
+    /// Would preallocate 2 buckets.
     pub fn new() -> Self {
+        Self::with_capacity(2)
+    }
+
+    pub fn with_capacity(cap: u32) -> Self {
         if LEN > (u32::MAX as usize) {
             panic!("LEN must be no larger than u32::MAX {}", u32::MAX);
         }
@@ -41,6 +46,13 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
             panic!("LEN must not be 0");
         }
 
-        todo!()
+        let mut buckets = Vec::with_capacity(cap as usize);
+        for _ in 0..cap {
+            buckets.push(Arc::new(Bucket::new()));
+        }
+
+        Self {
+            buckets: RwLock::new(buckets),
+        }
     }
 }
