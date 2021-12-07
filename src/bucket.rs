@@ -67,8 +67,12 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BITARRAY_LEN, L
         self.slot
     }
 
+    fn get_index(&self) -> usize {
+        (self.slot as usize) % LEN
+    }
+
     fn get_entry(&self) -> &Entry<T> {
-        let entry = &self.bucket.entries[(self.slot as usize) % LEN];
+        let entry = &self.bucket.entries[self.get_index()];
         debug_assert!(entry.counter.load(Ordering::Relaxed) > 0);
         entry
     }
@@ -123,6 +127,12 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Drop for ArenaArc<T, BITARR
 
             // Now entry.counter == 0
             unsafe { entry.val.get().drop_in_place() };
+
+            // Make sure drop is written to memory before
+            // the entry is reused again.
+            fence(Ordering::Release);
+
+            self.bucket.bitset.deallocate(self.get_index());
         }
     }
 }
