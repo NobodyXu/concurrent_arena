@@ -22,6 +22,12 @@ pub struct Arena<T, const BITARRAY_LEN: usize, const LEN: usize> {
     buckets: RwLock<Vec<Arc<Bucket<T, BITARRAY_LEN, LEN>>>>,
 }
 
+impl<T, const BITARRAY_LEN: usize, const LEN: usize> Default for Arena<T, BITARRAY_LEN, LEN> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
     /// Would preallocate 2 buckets.
     pub fn new() -> Self {
