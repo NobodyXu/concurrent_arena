@@ -6,6 +6,7 @@ use std::sync::Arc;
 use parking_lot::lock_api::GetThreadId;
 use parking_lot::RawThreadId;
 use parking_lot::RwLock;
+use parking_lot::RwLockUpgradableReadGuard;
 
 /// * `LEN` - Must be less than or equal to `u32::MAX`, divisible by
 ///   `usize::BITS` and it must not be `0`.
@@ -88,6 +89,29 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         Err((value, len as u32))
     }
 
+    pub fn reserve(&self, new_len: u32) {
+        // Use an upgradable_read to check if the key has already
+        // been added by another thread.
+        //
+        // Unlike write guard, this UpgradableReadGuard only blocks
+        // other UpgradableReadGuard and WriteGuard, so the readers
+        // will not be blocked while ensuring that there is no other
+        // writer.
+        let guard = self.buckets.upgradable_read();
+        let len = guard.len() as u32;
+
+        // If another writer has already done the reservation, return.
+        if len >= new_len {
+            return;
+        }
+
+        // If no other writer has done the reservation, do it now.
+        let mut guard = RwLockUpgradableReadGuard::upgrade(guard);
+        for _ in len..new_len {
+            guard.push(Arc::new(Bucket::new()));
+        }
+    }
+
     pub fn insert(&self, mut value: T) -> ArenaArc<T, BITARRAY_LEN, LEN> {
         loop {
             let mut len = 0;
@@ -105,7 +129,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
                 continue;
             }
 
-            todo!()
+            self.reserve(len + 1);
         }
     }
 }
