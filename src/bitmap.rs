@@ -13,6 +13,7 @@ fn compare_exchange(atomic: &AtomicUsize, curr: usize, new: usize) -> Result<(),
 }
 
 /// * `BITARRAY_LEN` - the number of AtomicUsize
+#[derive(Debug)]
 pub(crate) struct BitMap<const BITARRAY_LEN: usize>([AtomicUsize; BITARRAY_LEN]);
 
 impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
