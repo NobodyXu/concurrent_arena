@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 parking_lot = "0.11.2"
 array-init = "2.0.0"
+
+const_fn_assert = "0.1.2"
