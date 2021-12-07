@@ -10,6 +10,8 @@ use parking_lot::RawThreadId;
 use parking_lot::RwLock;
 use parking_lot::RwLockUpgradableReadGuard;
 
+use const_fn_assert::cfn_assert;
+
 /// * `LEN` - Number of elements stored per bucket.
 ///    Must be less than or equal to `u32::MAX`, divisible by
 ///   `usize::BITS` and it must not be `0`.
@@ -37,23 +39,14 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Default for Arena<T, BITARR
 }
 
 impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
-    fn check_const_generics() {
+    const fn check_const_generics() {
         let bits = usize::BITS as usize;
 
-        if LEN > (u32::MAX as usize) {
-            panic!("LEN must be no larger than u32::MAX {}", u32::MAX);
-        }
-        if LEN / bits != BITARRAY_LEN {
-            panic!("BITARRAY_LEN MUST be equal to LEN / usize::BITS");
-        }
+        cfn_assert!(LEN <= (u32::MAX as usize));
+        cfn_assert!(LEN % bits == 0);
+        cfn_assert!(LEN != 0);
 
-        if LEN % bits != 0 {
-            panic!("bitarray_LEN MUST be divisible usize::BITS");
-        }
-
-        if LEN == 0 {
-            panic!("LEN must not be 0");
-        }
+        cfn_assert!(LEN / bits == BITARRAY_LEN);
     }
 
     /// Maximum buckets `Arena` can have.
