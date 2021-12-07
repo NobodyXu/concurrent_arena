@@ -1,3 +1,4 @@
+mod bitmap;
 mod bucket;
 
 pub use bucket::ArenaArc;
