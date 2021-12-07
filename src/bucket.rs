@@ -48,7 +48,10 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
         bucket_index: u32,
         value: T,
     ) -> Result<ArenaArc<T, BITARRAY_LEN, LEN>, T> {
-        let index = this.bitset.allocate().ok_or(value)?;
+        let index = match this.bitset.allocate() {
+            Some(index) => index,
+            None => return Err(value),
+        };
 
         // Make sure drop is written to memory before
         // the entry is reused again.
