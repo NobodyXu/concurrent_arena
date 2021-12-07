@@ -76,7 +76,9 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
         let prev_refcnt = entry.counter.fetch_add(1, Ordering::Relaxed);
         assert_eq!(prev_refcnt, 0);
 
-        unsafe { entry.val.get().write(Some(value)) };
+        let option = unsafe { &mut *entry.val.get() };
+        assert!(option.is_none());
+        *option = Some(value);
 
         Some(ArenaArc {
             slot: bucket_index * (LEN as u32) + index as u32,
