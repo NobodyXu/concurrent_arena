@@ -60,7 +60,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
         let entry = &this.entries[index];
 
         // 1 for the ArenaArc, another is for the Bucket itself
-        let prev_refcnt = entry.counter.fetch_add(2, Ordering::Relaxed);
+        let prev_refcnt = entry.counter.swap(2, Ordering::Relaxed);
         debug_assert_eq!(prev_refcnt, 0);
 
         let option = unsafe { &mut *entry.val.get() };
