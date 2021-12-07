@@ -21,6 +21,14 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
         Self(array_init(|_| AtomicUsize::new(0)))
     }
 
+    pub(crate) fn load(&self, index: u32) -> bool {
+        let bits = usize::BITS;
+        let mask = 1 << (index % bits);
+        let offset = (index / bits) as usize;
+
+        (self.0[offset].load(Relaxed) & mask) != 0
+    }
+
     pub(crate) fn allocate(&self) -> Option<usize> {
         let mut pos = RawThreadId::INIT.nonzero_thread_id().get() % BITARRAY_LEN;
 
