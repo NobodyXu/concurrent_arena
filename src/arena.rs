@@ -10,9 +10,11 @@ use parking_lot::RawThreadId;
 use parking_lot::RwLock;
 use parking_lot::RwLockUpgradableReadGuard;
 
-/// * `LEN` - Must be less than or equal to `u32::MAX`, divisible by
+/// * `LEN` - Number of elements stored per bucket.
+///    Must be less than or equal to `u32::MAX`, divisible by
 ///   `usize::BITS` and it must not be `0`.
-/// * `BITARRAY_LEN` - Must be equal to `LEN / usize::BITS`.
+/// * `BITARRAY_LEN` - Number bits in the bitmap per bucket.
+///   Must be equal to `LEN / usize::BITS`.
 ///
 /// `Arena` stores the elements in buckets to ensure that the address
 /// for elements are stable while improving efficiency.
