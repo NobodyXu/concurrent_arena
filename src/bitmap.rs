@@ -24,8 +24,10 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
     pub(crate) fn allocate(&self) -> Option<usize> {
         let mut pos = RawThreadId::INIT.nonzero_thread_id().get() % BITARRAY_LEN;
 
-        for _ in 0..BITARRAY_LEN {
-            let chunk = &self.0[pos];
+        let slice1_iter = self.0[pos..].iter();
+        let slice2_iter = self.0[..pos].iter();
+
+        for chunk in slice1_iter.chain(slice2_iter) {
             let mut value = chunk.load(Relaxed);
 
             loop {
