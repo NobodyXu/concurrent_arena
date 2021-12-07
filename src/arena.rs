@@ -1,5 +1,7 @@
 use super::bucket::Bucket;
 
+use core::mem::size_of;
+
 use std::sync::Arc;
 
 use parking_lot::RwLock;
@@ -24,6 +26,21 @@ pub struct Arena<T, const BITARRAY_LEN: usize, const LEN: usize> {
 
 impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
     pub fn new() -> Self {
+        if LEN > (u32::MAX as usize) {
+            panic!("LEN must be no larger than u32::MAX {}", u32::MAX);
+        }
+        if LEN / size_of::<usize>() != BITARRAY_LEN {
+            panic!("BITARRAY_LEN MUST be equal to LEN / core::mem::size_of::<usize>()");
+        }
+
+        if LEN % size_of::<usize>() != 0 {
+            panic!("bitarray_LEN MUST be divisible core::mem::size_of::<usize>()");
+        }
+
+        if LEN == 0 {
+            panic!("LEN must not be 0");
+        }
+
         todo!()
     }
 }

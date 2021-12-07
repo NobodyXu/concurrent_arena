@@ -1,7 +1,6 @@
 use super::bitmap::BitMap;
 
 use core::cell::UnsafeCell;
-use core::mem::size_of;
 use core::ops::Deref;
 
 use std::sync::atomic::{fence, AtomicU8, Ordering};
@@ -30,9 +29,6 @@ impl<T> Entry<T> {
     }
 }
 
-/// * `LEN` - Must be less than or equal to `u32::MAX`, divisible by
-///   `core::mem::size_of::<usize>()` and it must not be `0`.
-/// * `BITARRAY_LEN` - Must be equal to `LEN / core::mem::size_of::<usize>()`.
 #[derive(Debug)]
 pub(crate) struct Bucket<T, const BITARRAY_LEN: usize, const LEN: usize> {
     bitset: BitMap<BITARRAY_LEN>,
@@ -41,21 +37,6 @@ pub(crate) struct Bucket<T, const BITARRAY_LEN: usize, const LEN: usize> {
 
 impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN> {
     pub(crate) fn new() -> Self {
-        if LEN > (u32::MAX as usize) {
-            panic!("LEN must be no larger than u32::MAX {}", u32::MAX);
-        }
-        if LEN / size_of::<usize>() != BITARRAY_LEN {
-            panic!("BITARRAY_LEN MUST be equal to LEN / core::mem::size_of::<usize>()");
-        }
-
-        if LEN % size_of::<usize>() != 0 {
-            panic!("bitarray_LEN MUST be divisible core::mem::size_of::<usize>()");
-        }
-
-        if LEN == 0 {
-            panic!("LEN must not be 0");
-        }
-
         Self {
             bitset: BitMap::new(),
             entries: array_init(|_| Entry::new()),
