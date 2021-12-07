@@ -35,19 +35,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Default for Arena<T, BITARR
 }
 
 impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
-    /// Maximum buckets `Arena` can have.
-    pub fn max_buckets() -> u32 {
-        u32::MAX / (LEN as u32)
-    }
-
-    /// Would preallocate 2 buckets.
-    pub fn new() -> Self {
-        Self::with_capacity(2)
-    }
-
-    pub fn with_capacity(cap: u32) -> Self {
-        let cap = min(cap, Self::max_buckets());
-
+    fn check_const_generics() {
         let bits = usize::BITS as usize;
 
         if LEN > (u32::MAX as usize) {
@@ -64,6 +52,24 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         if LEN == 0 {
             panic!("LEN must not be 0");
         }
+    }
+
+    /// Maximum buckets `Arena` can have.
+    pub fn max_buckets() -> u32 {
+        Self::check_const_generics();
+
+        u32::MAX / (LEN as u32)
+    }
+
+    /// Would preallocate 2 buckets.
+    pub fn new() -> Self {
+        Self::with_capacity(2)
+    }
+
+    pub fn with_capacity(cap: u32) -> Self {
+        Self::check_const_generics();
+
+        let cap = min(cap, Self::max_buckets());
 
         let mut buckets = Vec::with_capacity(cap as usize);
         for _ in 0..cap {
