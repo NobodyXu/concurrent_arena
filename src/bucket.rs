@@ -47,8 +47,8 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
         this: &Arc<Self>,
         bucket_index: u32,
         value: T,
-    ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
-        let index = this.bitset.allocate()?;
+    ) -> Result<ArenaArc<T, BITARRAY_LEN, LEN>, T> {
+        let index = this.bitset.allocate().ok_or(value)?;
 
         // Make sure drop is written to memory before
         // the entry is reused again.
@@ -63,7 +63,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
         debug_assert!(option.is_none());
         *option = Some(value);
 
-        Some(ArenaArc {
+        Ok(ArenaArc {
             slot: bucket_index * (LEN as u32) + index as u32,
             bucket: Arc::clone(this),
         })
