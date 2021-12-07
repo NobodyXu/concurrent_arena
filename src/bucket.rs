@@ -148,7 +148,11 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Drop for ArenaArc<T, BITARR
         // reference is dropped.
         //
         // [1]: https://www.boost.org/doc/libs/1_77_0/doc/html/atomic/usage_examples.html
-        if entry.counter.fetch_sub(1, Ordering::Release) == 1 {
+        let prev_refcnt = entry.counter.fetch_sub(1, Ordering::Release);
+
+        debug_assert_ne!(prev_refcnt, 0);
+
+        if prev_refcnt == 1 {
             // This is the last reference, drop the value.
 
             // According to [Boost documentation][1], an Acquire fence must be used
