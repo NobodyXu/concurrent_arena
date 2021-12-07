@@ -1,14 +1,11 @@
+use super::bitmap::BitMap;
+
 use core::cell::UnsafeCell;
 use core::mem::size_of;
 use core::ops::Deref;
 
 use std::sync::atomic::{fence, AtomicU8, Ordering};
 use std::sync::Arc;
-
-use parking_lot::RawThreadId;
-
-use bitvec::access::BitSafeUsize;
-use bitvec::prelude::*;
 
 use array_init::array_init;
 
@@ -35,7 +32,7 @@ impl<T> Entry<T> {
 /// * `LEN` - Must be less than or equal to `u32::MAX`
 /// * `BITARRAY_LEN` - Must be equal to `LEN / core::mem::size_of::<usize>()`.
 pub(crate) struct Bucket<T, const BITARRAY_LEN: usize, const LEN: usize> {
-    bitset: BitArray<Lsb0, [BitSafeUsize; BITARRAY_LEN]>,
+    bitset: BitMap<BITARRAY_LEN>,
     entries: [Entry<T>; LEN],
 }
 
@@ -49,7 +46,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
         }
 
         Self {
-            bitset: BitArray::zeroed(),
+            bitset: BitMap::new(),
             entries: array_init(|_| Entry::new()),
         }
     }
