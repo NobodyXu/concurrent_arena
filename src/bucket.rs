@@ -80,7 +80,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
     }
 
     pub(crate) fn remove(
-        this: &Arc<Self>,
+        this: Arc<Self>,
         bucket_index: u32,
         index: u32,
     ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
@@ -107,7 +107,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
             Some(ArenaArc {
                 slot: bucket_index * (LEN as u32) + index,
                 index,
-                bucket: Arc::clone(this),
+                bucket: this,
             })
         } else {
             None

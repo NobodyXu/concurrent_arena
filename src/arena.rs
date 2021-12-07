@@ -151,10 +151,8 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         let bucket_index = slot / (LEN as u32);
         let index = slot % (LEN as u32);
 
-        Bucket::remove(
-            &self.buckets.read()[bucket_index as usize],
-            bucket_index,
-            index,
-        )
+        let bucket = self.buckets.read()[bucket_index as usize].clone();
+
+        Bucket::remove(bucket, bucket_index, index)
     }
 }
