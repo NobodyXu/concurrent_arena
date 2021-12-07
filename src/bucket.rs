@@ -57,14 +57,13 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
             None => return Err(value),
         };
 
-        // Make sure drop is written to memory before
-        // the entry is reused again.
-        fence(Ordering::Acquire);
-
         let entry = &this.entries[index];
 
-        // 1 for the ArenaArc, another is for the Bucket itself
-        let prev_refcnt = entry.counter.swap(2, Ordering::Relaxed);
+        // 1 for the ArenaArc, another is for the Bucket itself.
+        //
+        // Use `Acquire` here to make sure drop is written to memory before
+        // the entry is reused again.
+        let prev_refcnt = entry.counter.swap(2, Ordering::Acquire);
         debug_assert_eq!(prev_refcnt, 0);
 
         let option = unsafe { &mut *entry.val.get() };
@@ -200,9 +199,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Drop for ArenaArc<T, BITARR
 
             // Make sure drop is written to memory before
             // the entry is reused again.
-            fence(Ordering::Release);
-
-            entry.counter.store(0, Ordering::Relaxed);
+            entry.counter.store(0, Ordering::Release);
 
             self.bucket.bitset.deallocate(self.get_index());
         }
