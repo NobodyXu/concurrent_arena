@@ -8,6 +8,10 @@ use std::sync::Arc;
 
 use array_init::array_init;
 
+const REMOVED_MASK: u8 = 1 << (u8::BITS - 1);
+const REFCNT_MASK: u8 = !REMOVED_MASK;
+pub const MAX_REFCNT: u8 = REFCNT_MASK;
+
 #[derive(Debug)]
 struct Entry<T> {
     counter: AtomicU8,
@@ -75,9 +79,44 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
             bucket: Arc::clone(this),
         })
     }
+
+    pub(crate) fn remove(
+        this: &Arc<Self>,
+        bucket_index: u32,
+        index: u32,
+    ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
+        if this.bitset.load(index) {
+            let counter = &this.entries[index as usize].counter;
+            let mut refcnt = counter.load(Ordering::Relaxed);
+
+            loop {
+                if (refcnt & REMOVED_MASK) != 0 {
+                    return None;
+                }
+
+                match counter.compare_exchange_weak(
+                    refcnt,
+                    refcnt | REMOVED_MASK,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => break,
+                    Err(new_refcnt) => refcnt = new_refcnt,
+                }
+            }
+
+            Some(ArenaArc {
+                slot: bucket_index * (LEN as u32) + index,
+                index,
+                bucket: Arc::clone(this),
+            })
+        } else {
+            None
+        }
+    }
 }
 
-/// Can have at most u8::MAX refcount.
+/// Can have at most `MAX_REFCNT` refcount.
 pub struct ArenaArc<T, const BITARRAY_LEN: usize, const LEN: usize> {
     slot: u32,
     index: u32,
@@ -95,7 +134,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BITARRAY_LEN, L
 
     fn get_entry(&self) -> &Entry<T> {
         let entry = &self.bucket.entries[self.get_index()];
-        debug_assert!(entry.counter.load(Ordering::Relaxed) > 0);
+        debug_assert!((entry.counter.load(Ordering::Relaxed) & REFCNT_MASK) > 0);
         entry
     }
 }
@@ -119,7 +158,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Clone for ArenaArc<T, BITAR
         // reference alive.
         //
         // [1]: https://www.boost.org/doc/libs/1_77_0/doc/html/atomic/usage_examples.html
-        if entry.counter.fetch_add(1, Ordering::Relaxed) == u8::MAX {
+        if (entry.counter.fetch_add(1, Ordering::Relaxed) & REFCNT_MASK) == MAX_REFCNT {
             panic!("ArenaArc can have at most u8::MAX refcount");
         }
 
@@ -140,11 +179,14 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Drop for ArenaArc<T, BITARR
         // reference is dropped.
         //
         // [1]: https://www.boost.org/doc/libs/1_77_0/doc/html/atomic/usage_examples.html
-        let prev_refcnt = entry.counter.fetch_sub(1, Ordering::Release);
+        let prev_counter = entry.counter.fetch_sub(1, Ordering::Release);
+        let prev_refcnt = prev_counter & MAX_REFCNT;
 
         debug_assert_ne!(prev_refcnt, 0);
 
         if prev_refcnt == 1 {
+            debug_assert_eq!(prev_counter, REMOVED_MASK | 1);
+
             // This is the last reference, drop the value.
 
             // According to [Boost documentation][1], an Acquire fence must be used
@@ -159,6 +201,8 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Drop for ArenaArc<T, BITARR
             // Make sure drop is written to memory before
             // the entry is reused again.
             fence(Ordering::Release);
+
+            entry.counter.store(0, Ordering::Relaxed);
 
             self.bucket.bitset.deallocate(self.get_index());
         }
