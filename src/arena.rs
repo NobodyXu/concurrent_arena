@@ -1,6 +1,8 @@
 use super::bucket::Bucket;
 use super::ArenaArc;
 
+use core::cmp::min;
+
 use std::sync::Arc;
 
 use parking_lot::lock_api::GetThreadId;
@@ -33,6 +35,11 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Default for Arena<T, BITARR
 }
 
 impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
+    /// Maximum buckets `Arena` can have.
+    pub fn max_buckets() -> u32 {
+        u32::MAX / (LEN as u32)
+    }
+
     /// Would preallocate 2 buckets.
     pub fn new() -> Self {
         Self::with_capacity(2)
@@ -90,6 +97,8 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
     }
 
     pub fn reserve(&self, new_len: u32) {
+        let new_len = min(new_len, Self::max_buckets());
+
         // Use an upgradable_read to check if the key has already
         // been added by another thread.
         //
