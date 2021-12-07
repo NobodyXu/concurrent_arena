@@ -43,7 +43,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
         }
     }
 
-    pub(crate) fn insert(
+    pub(crate) fn try_insert(
         this: &Arc<Self>,
         bucket_index: u32,
         value: T,
