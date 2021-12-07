@@ -7,4 +7,4 @@ edition = "2021"
 parking_lot = "0.11.2"
 bitvec = { version = "0.22.3", features = ["atomic"] }
 
-arr_macro = "0.1.3"
+array-init = "2.0.0"
