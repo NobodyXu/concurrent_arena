@@ -114,22 +114,16 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
 
     pub fn insert(&self, mut value: T) -> ArenaArc<T, BITARRAY_LEN, LEN> {
         loop {
-            let mut len = 0;
-
             match self.try_insert(value) {
-                Ok(arc) => return arc,
-                Err((val, vec_len)) => {
+                Ok(arc) => break arc,
+                Err((val, len)) => {
                     value = val;
-                    len = vec_len;
+
+                    if len != u32::MAX {
+                        self.reserve(len + 1);
+                    }
                 }
             }
-
-            if len == u32::MAX {
-                // Try again
-                continue;
-            }
-
-            self.reserve(len + 1);
         }
     }
 }
