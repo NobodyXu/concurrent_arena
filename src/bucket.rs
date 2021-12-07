@@ -51,8 +51,28 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
         }
     }
 
-    pub(crate) fn insert(&self, bucket_index: u32) -> ArenaArc<T, BITARRAY_LEN, LEN> {
-        todo!()
+    pub(crate) fn insert(
+        this: &Arc<Self>,
+        bucket_index: u32,
+        value: T,
+    ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
+        let index = this.bitset.allocate()?;
+
+        // Make sure drop is written to memory before
+        // the entry is reused again.
+        fence(Ordering::Acquire);
+
+        let entry = &this.entries[index];
+
+        let prev_refcnt = entry.counter.fetch_add(1, Ordering::Relaxed);
+        assert_eq!(prev_refcnt, 0);
+
+        unsafe { entry.val.get().write(Some(value)) };
+
+        Some(ArenaArc {
+            slot: bucket_index * (LEN as u32) + index as u32,
+            bucket: Arc::clone(this),
+        })
     }
 }
 
