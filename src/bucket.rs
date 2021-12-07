@@ -155,7 +155,8 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Drop for ArenaArc<T, BITARR
             fence(Ordering::Acquire);
 
             // Now entry.counter == 0
-            unsafe { entry.val.get().drop_in_place() };
+            let option = unsafe { &mut *entry.val.get() };
+            *option = None;
 
             // Make sure drop is written to memory before
             // the entry is reused again.
