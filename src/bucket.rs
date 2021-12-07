@@ -66,8 +66,11 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
         debug_assert!(option.is_none());
         *option = Some(value);
 
+        let index = index as u32;
+
         Ok(ArenaArc {
-            slot: bucket_index * (LEN as u32) + index as u32,
+            slot: bucket_index * (LEN as u32) + index,
+            index,
             bucket: Arc::clone(this),
         })
     }
@@ -76,6 +79,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
 /// Can have at most u8::MAX refcount.
 pub struct ArenaArc<T, const BITARRAY_LEN: usize, const LEN: usize> {
     slot: u32,
+    index: u32,
     bucket: Arc<Bucket<T, BITARRAY_LEN, LEN>>,
 }
 
@@ -85,7 +89,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BITARRAY_LEN, L
     }
 
     fn get_index(&self) -> usize {
-        (self.slot as usize) % LEN
+        self.index as usize
     }
 
     fn get_entry(&self) -> &Entry<T> {
@@ -120,6 +124,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Clone for ArenaArc<T, BITAR
 
         Self {
             slot: self.slot,
+            index: self.index,
             bucket: Arc::clone(&self.bucket),
         }
     }
