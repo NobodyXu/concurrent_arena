@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use array_init::array_init;
 
+#[derive(Debug)]
 struct Entry<T> {
     counter: AtomicU8,
     val: UnsafeCell<Option<T>>,
@@ -32,6 +33,7 @@ impl<T> Entry<T> {
 /// * `LEN` - Must be less than or equal to `u32::MAX`, divisible by
 ///   `core::mem::size_of::<usize>()` and it must not be `0`.
 /// * `BITARRAY_LEN` - Must be equal to `LEN / core::mem::size_of::<usize>()`.
+#[derive(Debug)]
 pub(crate) struct Bucket<T, const BITARRAY_LEN: usize, const LEN: usize> {
     bitset: BitMap<BITARRAY_LEN>,
     entries: [Entry<T>; LEN],
