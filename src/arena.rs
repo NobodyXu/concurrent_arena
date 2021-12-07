@@ -65,9 +65,11 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         }
     }
 
-    fn try_insert(&self, mut value: T) -> Result<ArenaArc<T, BITARRAY_LEN, LEN>, (T, usize)> {
+    fn try_insert(&self, mut value: T) -> Result<ArenaArc<T, BITARRAY_LEN, LEN>, (T, u32)> {
         let guard = self.buckets.read();
         let len = guard.len();
+
+        debug_assert!(len <= u32::MAX as usize);
 
         let mut pos = RawThreadId::INIT.nonzero_thread_id().get() % len;
 
@@ -83,10 +85,27 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
             pos = (pos + 1) % len;
         }
 
-        Err((value, len))
+        Err((value, len as u32))
     }
 
-    pub fn insert(&self, value: T) -> ArenaArc<T, BITARRAY_LEN, LEN> {
-        todo!()
+    pub fn insert(&self, mut value: T) -> ArenaArc<T, BITARRAY_LEN, LEN> {
+        loop {
+            let mut len = 0;
+
+            match self.try_insert(value) {
+                Ok(arc) => return arc,
+                Err((val, vec_len)) => {
+                    value = val;
+                    len = vec_len;
+                }
+            }
+
+            if len == u32::MAX {
+                // Try again
+                continue;
+            }
+
+            todo!()
+        }
     }
 }
