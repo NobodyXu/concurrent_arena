@@ -54,7 +54,7 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
                 }
             }
 
-            pos += 1;
+            pos = (pos + 1) % BITARRAY_LEN;
         }
 
         None
