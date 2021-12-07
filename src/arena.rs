@@ -46,6 +46,8 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
     }
 
     pub fn with_capacity(cap: u32) -> Self {
+        let cap = min(cap, Self::max_buckets());
+
         let bits = usize::BITS as usize;
 
         if LEN > (u32::MAX as usize) {
