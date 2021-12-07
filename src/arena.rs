@@ -1,7 +1,10 @@
 use super::bucket::Bucket;
+use super::ArenaArc;
 
 use std::sync::Arc;
 
+use parking_lot::lock_api::GetThreadId;
+use parking_lot::RawThreadId;
 use parking_lot::RwLock;
 
 /// * `LEN` - Must be less than or equal to `u32::MAX`, divisible by
@@ -60,5 +63,30 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         Self {
             buckets: RwLock::new(buckets),
         }
+    }
+
+    fn try_insert(&self, mut value: T) -> Result<ArenaArc<T, BITARRAY_LEN, LEN>, (T, usize)> {
+        let guard = self.buckets.read();
+        let len = guard.len();
+
+        let mut pos = RawThreadId::INIT.nonzero_thread_id().get() % len;
+
+        let slice1_iter = guard[pos..].iter();
+        let slice2_iter = guard[..pos].iter();
+
+        for bucket in slice1_iter.chain(slice2_iter) {
+            match Bucket::try_insert(bucket, pos as u32, value) {
+                Ok(arc) => return Ok(arc),
+                Err(val) => value = val,
+            }
+
+            pos = (pos + 1) % len;
+        }
+
+        Err((value, len))
+    }
+
+    pub fn insert(&self, value: T) -> ArenaArc<T, BITARRAY_LEN, LEN> {
+        todo!()
     }
 }
