@@ -168,6 +168,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         }
     }
 
+    /// May block if the slot is not fully initialized.
     pub fn remove(&self, slot: u32) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
         let bucket_index = slot / (LEN as u32);
         let index = slot % (LEN as u32);
