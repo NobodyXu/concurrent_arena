@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use arrayvec::ArrayVec;
 
+use parking_lot::const_rwlock;
 use parking_lot::lock_api::GetThreadId;
 use parking_lot::RawThreadId;
 use parking_lot::RwLock;
@@ -61,6 +62,12 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
     /// Would preallocate 2 buckets.
     pub fn new() -> Self {
         Self::with_capacity(2)
+    }
+
+    pub const fn const_new() -> Self {
+        Self {
+            buckets: const_rwlock(Vec::new()),
+        }
     }
 
     pub fn with_capacity(cap: u32) -> Self {
