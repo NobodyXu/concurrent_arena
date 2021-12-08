@@ -223,6 +223,8 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
                 Err((val, len)) => {
                     value = val;
 
+                    // If len == Self::max_buckets(), then we would have to
+                    // wait for slots to be removed from `Arena`.
                     if len != Self::max_buckets() {
                         // If try_reserve succeeds, then another new bucket is available.
                         //
