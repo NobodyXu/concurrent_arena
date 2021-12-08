@@ -208,9 +208,10 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         }
     }
 
-    /// Try to insert one value.
+    /// Insert one value.
     ///
-    /// If that fail, then try to reserve one bucket and restart the operation.
+    /// If there isn't enough buckets, then try to reserve one bucket and
+    /// restart the operation.
     pub fn insert(&self, mut value: T) -> ArenaArc<T, BITARRAY_LEN, LEN> {
         loop {
             match self.try_insert(value) {
