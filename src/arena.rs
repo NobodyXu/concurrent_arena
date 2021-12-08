@@ -124,12 +124,20 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
     ///
     ///   And having `BUFFER_SIZE` larger than `new_len - len` would only waste stack.
     ///
-    /// Reserve `min(new_len, Self::max_buckets())` buckets.
+    /// Try to reserve `min(new_len, Self::max_buckets())` buckets.
     ///
-    /// In order to reduce critical section, `reserve` would first acquire
+    /// In order to reduce critical section, `reserve` would try to first acquire
     /// upgradable read guard, which would not block other readers, but
     /// do block other threads attempting to acquire upgradable read guard
     /// and write guard.
+    ///
+    /// If it fails to acquire the upgradable read lock, it would return false.
+    ///
+    /// This would reduce number of threads waiting to reserve more buckets,
+    /// thus reducing the contention for upgradable read lock.
+    ///
+    /// These threads could give up reservation and try to `insert` new keys instead,
+    /// as others might have already reserve enough space for it.
     ///
     /// It would check the length, and if it is not large enough, then it would
     /// allocate the buckets on the buffer, upgrade the read guard to
@@ -139,7 +147,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
     /// If the buffer isn't large enough for all elements, it will downgrade
     /// the write guard to upgradable read guard and do the steps described above
     /// again.
-    pub fn reserve<const BUFFER_SIZE: usize>(&self, new_len: u32) {
+    pub fn try_reserve<const BUFFER_SIZE: usize>(&self, new_len: u32) -> bool {
         cfn_assert!(BUFFER_SIZE <= Self::max_buckets() as usize);
         cfn_assert!(BUFFER_SIZE > 0);
 
@@ -153,13 +161,16 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         // other UpgradableReadGuard and WriteGuard, so the readers
         // will not be blocked while ensuring that there is no other
         // writer.
-        let mut read_guard = self.buckets.upgradable_read();
+        let mut read_guard = match self.buckets.try_upgradable_read() {
+            Some(read_guard) => read_guard,
+            None => return false,
+        };
 
         let len = read_guard.len() as u32;
 
         // If another writer has already done the reservation, return.
         if len >= new_len {
-            return;
+            return true;
         }
 
         let mut cnt = new_len - len;
@@ -183,7 +194,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
             }
 
             if cnt == 0 {
-                break;
+                return true;
             }
 
             read_guard = RwLockWriteGuard::downgrade_to_upgradable(write_guard);
@@ -198,7 +209,11 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
                     value = val;
 
                     if len != Self::max_buckets() {
-                        self.reserve::<1>(len + 1);
+                        // If try_reserve fail, then another thread is doing the
+                        // reservation.
+                        //
+                        // We can simply restart operation, waiting for it to be done.
+                        self.try_reserve::<1>(len + 1);
                     }
                 }
             }
