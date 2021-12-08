@@ -204,6 +204,9 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         }
     }
 
+    /// Try to insert one value.
+    ///
+    /// If that fail, then try to reserve one bucket and restart the operation.
     pub fn insert(&self, mut value: T) -> ArenaArc<T, BITARRAY_LEN, LEN> {
         loop {
             match self.try_insert(value) {
@@ -212,6 +215,8 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
                     value = val;
 
                     if len != Self::max_buckets() {
+                        // If try_reserve succeeds, then another new bucket is available.
+                        //
                         // If try_reserve fail, then another thread is doing the
                         // reservation.
                         //
