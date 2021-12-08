@@ -90,6 +90,18 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
     /// Return Ok(arc) on success, or Err((value, len)) where value is
     /// the input param `value` and `len` is the length of the `Arena` at the time
     /// of insertion.
+    ///
+    /// # How it works
+    ///
+    /// `try_insert` would acquire the read guard and iterate the entire underlying
+    /// backing `Vec`, starting from a random position decided by the unique thread id.
+    ///
+    /// It would then try to insert a new entry in `Bucket`, which also iterate over
+    /// the bitmap starting from a random position decided by the unique thread id.
+    ///
+    /// Using the approach described above to distribute insertion requests, we can
+    /// minimize the possibility on two threads trying to access and modify the
+    /// same variable using atomic instructions, thus improving efficiency.
     pub fn try_insert(&self, mut value: T) -> Result<ArenaArc<T, BITARRAY_LEN, LEN>, (T, u32)> {
         let guard = self.buckets.read();
         let len = guard.len();
