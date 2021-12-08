@@ -80,7 +80,6 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         let guard = self.buckets.read();
         let len = guard.len();
 
-        debug_assert!(len <= u32::MAX as usize);
         debug_assert!(len <= Self::max_buckets() as usize);
 
         let mut pos = RawThreadId::INIT.nonzero_thread_id().get() % len;
