@@ -174,4 +174,12 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
 
         Bucket::remove(bucket, bucket_index, index)
     }
+
+    pub fn len(&self) -> u32 {
+        self.buckets.read().len() as u32
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
