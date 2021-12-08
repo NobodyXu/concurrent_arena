@@ -155,23 +155,25 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         // writer.
         let mut read_guard = self.buckets.upgradable_read();
 
+        let len = read_guard.len() as u32;
+
+        // If another writer has already done the reservation, return.
+        if len >= new_len {
+            return;
+        }
+
+        let mut cnt = new_len - len;
+
         loop {
-            let len = read_guard.len() as u32;
-
-            // If another writer has already done the reservation, return.
-            if len >= new_len {
-                return;
-            }
-
             // If no other writer has done the reservation, do it now.
             //
             // First, we allocate new bucket and put it in buffer
             // to avoid blocking the readers.
-            let cnt = new_len - len;
-
             for _ in 0..min(cnt, BUFFER_SIZE as u32) {
                 buffer.try_push(Arc::new(Bucket::new())).unwrap();
             }
+
+            cnt -= buffer.len() as u32;
 
             // Push all allocated buckets into the buffer at once.
             let mut write_guard = RwLockUpgradableReadGuard::upgrade(read_guard);
@@ -180,7 +182,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
                 write_guard.push(new_bucket);
             }
 
-            if cnt <= BUFFER_SIZE as u32 {
+            if cnt == 0 {
                 break;
             }
 
