@@ -188,7 +188,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
             // First, we allocate new bucket and put it in buffer
             // to avoid blocking the readers.
             for _ in 0..min(cnt, BUFFER_SIZE as u32) {
-                buffer.try_push(Arc::new(Bucket::new())).unwrap();
+                buffer.push(Arc::new(Bucket::new()));
             }
 
             cnt -= buffer.len() as u32;
