@@ -113,6 +113,12 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
     /// * `BUFFER_SIZE` - Must be less than or equal to `Self::max_buckets()` and
     ///   greater than 0.
     ///
+    ///   It will be used to store `Arc` (8 bytes on 64-bit platform and
+    ///   4 bytes on 32-bit platform).
+    ///
+    ///   It is suggested to use any value between [10, 30] and less than or equal to
+    ///   `new_len - len`.
+    ///
     /// Reserve `min(new_len, Self::max_buckets())` buckets.
     pub fn reserve<const BUFFER_SIZE: usize>(&self, new_len: u32) {
         cfn_assert!(BUFFER_SIZE <= Self::max_buckets() as usize);
