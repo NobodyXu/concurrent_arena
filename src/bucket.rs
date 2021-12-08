@@ -1,6 +1,7 @@
 use super::bitmap::BitMap;
 
 use core::cell::UnsafeCell;
+use core::hint::spin_loop;
 use core::ops::Deref;
 
 use std::sync::atomic::{fence, AtomicU8, Ordering};
@@ -101,8 +102,16 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
             let mut refcnt = counter.load(Ordering::Relaxed);
 
             loop {
-                if (refcnt & REMOVED_MASK) != 0 || refcnt == 0 {
+                if (refcnt & REMOVED_MASK) != 0 {
                     return None;
+                }
+
+                if refcnt == 0 {
+                    // The variable is not yet fully initialized.
+                    // Reload the refcnt and check again.
+                    spin_loop();
+                    refcnt = counter.load(Ordering::Relaxed);
+                    continue;
                 }
 
                 match counter.compare_exchange_weak(
