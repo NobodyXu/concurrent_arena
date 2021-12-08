@@ -103,6 +103,8 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
 
     /// * `BUFFER_SIZE` - Must be less than or equal to `Self::max_buckets()` and
     ///   greater than 0.
+    ///
+    /// Reserve `min(new_len, Self::max_buckets())` buckets.
     pub fn reserve<const BUFFER_SIZE: usize>(&self, new_len: u32) {
         cfn_assert!(BUFFER_SIZE <= Self::max_buckets() as usize);
         cfn_assert!(BUFFER_SIZE > 0);
@@ -175,6 +177,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         Bucket::remove(bucket, bucket_index, index)
     }
 
+    /// Return number of buckets allocated.
     pub fn len(&self) -> u32 {
         self.buckets.read().len() as u32
     }
