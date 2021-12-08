@@ -72,8 +72,15 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
         //
         // Set counter after option is set to `Some(...)` to avoid
         // race condition with `remove`.
-        let prev_refcnt = entry.counter.swap(2, Ordering::Relaxed);
-        debug_assert_eq!(prev_refcnt, 0);
+        #[cfg(debug_assertion)]
+        {
+            let prev_refcnt = entry.counter.swap(2, Ordering::Relaxed);
+            assert_eq!(prev_refcnt, 0);
+        }
+        #[cfg(not(debug_assertion))]
+        {
+            entry.counter.store(2, Ordering::Relaxed);
+        }
 
         let index = index as u32;
 
