@@ -11,6 +11,7 @@ use arrayvec::ArrayVec;
 use parking_lot::const_rwlock;
 use parking_lot::RwLock;
 use parking_lot::RwLockUpgradableReadGuard;
+use parking_lot::RwLockWriteGuard;
 
 use const_fn_assert::{cfn_assert, cfn_assert_eq, cfn_assert_ne};
 
@@ -130,16 +131,17 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         let new_len = min(new_len, Self::max_buckets());
         let mut buffer = ArrayVec::<Arc<Bucket<T, BITARRAY_LEN, LEN>>, BUFFER_SIZE>::new();
 
+        // Use an upgradable_read to check if the key has already
+        // been added by another thread.
+        //
+        // Unlike write guard, this UpgradableReadGuard only blocks
+        // other UpgradableReadGuard and WriteGuard, so the readers
+        // will not be blocked while ensuring that there is no other
+        // writer.
+        let mut read_guard = self.buckets.upgradable_read();
+
         loop {
-            // Use an upgradable_read to check if the key has already
-            // been added by another thread.
-            //
-            // Unlike write guard, this UpgradableReadGuard only blocks
-            // other UpgradableReadGuard and WriteGuard, so the readers
-            // will not be blocked while ensuring that there is no other
-            // writer.
-            let guard = self.buckets.upgradable_read();
-            let len = guard.len() as u32;
+            let len = read_guard.len() as u32;
 
             // If another writer has already done the reservation, return.
             if len >= new_len {
@@ -157,17 +159,17 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
             }
 
             // Push all allocated buckets into the buffer at once.
-            {
-                let mut guard = RwLockUpgradableReadGuard::upgrade(guard);
-                // Drain the buffer
-                for new_bucket in buffer.drain(..) {
-                    guard.push(new_bucket);
-                }
+            let mut write_guard = RwLockUpgradableReadGuard::upgrade(read_guard);
+            // Drain the buffer
+            for new_bucket in buffer.drain(..) {
+                write_guard.push(new_bucket);
             }
 
             if cnt <= BUFFER_SIZE as u32 {
                 break;
             }
+
+            read_guard = RwLockWriteGuard::downgrade_to_upgradable(write_guard);
         }
     }
 
