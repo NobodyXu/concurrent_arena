@@ -42,6 +42,13 @@ pub(crate) struct Bucket<T, const BITARRAY_LEN: usize, const LEN: usize> {
     entries: [Entry<T>; LEN],
 }
 
+#[cfg(debug_assertions)]
+impl<T, const BITARRAY_LEN: usize, const LEN: usize> Drop for Bucket<T, BITARRAY_LEN, LEN> {
+    fn drop(&mut self) {
+        assert!(self.bitset.is_all_zero());
+    }
+}
+
 impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN> {
     pub(crate) fn new() -> Self {
         Self {
