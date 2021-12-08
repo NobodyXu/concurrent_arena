@@ -87,7 +87,10 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         }
     }
 
-    fn try_insert(&self, mut value: T) -> Result<ArenaArc<T, BITARRAY_LEN, LEN>, (T, u32)> {
+    /// Return Ok(arc) on success, or Err((value, len)) where value is
+    /// the input param `value` and `len` is the length of the `Arena` at the time
+    /// of insertion.
+    pub fn try_insert(&self, mut value: T) -> Result<ArenaArc<T, BITARRAY_LEN, LEN>, (T, u32)> {
         let guard = self.buckets.read();
         let len = guard.len();
 
