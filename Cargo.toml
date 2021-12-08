@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-parking_lot = "0.11.2"
-array-init = "2.0.0"
-
 const_fn_assert = "0.1.2"
+
+array-init = "2.0.0"
+arrayvec = "0.7.2"
+
+parking_lot = "0.11.2"
