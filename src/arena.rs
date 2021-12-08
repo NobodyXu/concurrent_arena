@@ -158,7 +158,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
                 Err((val, len)) => {
                     value = val;
 
-                    if len != u32::MAX {
+                    if len != Self::max_buckets() {
                         self.reserve::<1>(len + 1);
                     }
                 }
