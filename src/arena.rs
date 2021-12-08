@@ -93,6 +93,10 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
 
         debug_assert!(len <= Self::max_buckets() as usize);
 
+        if len == 0 {
+            return Err((value, 0));
+        }
+
         let mut pos = RawThreadId::INIT.nonzero_thread_id().get() % len;
 
         let slice1_iter = guard[pos..].iter();
