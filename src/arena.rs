@@ -251,7 +251,8 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         }
     }
 
-    /// May enter busy loop if the slot is not fully initialized.
+    /// May enter busy loop if the slot is not fully initialized, however
+    /// the busy loop does not hold the read lock of the underlying `Vec`.
     pub fn remove(&self, slot: u32) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
         let bucket_index = slot / (LEN as u32);
         let index = slot % (LEN as u32);
