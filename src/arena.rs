@@ -1,4 +1,5 @@
 use super::bucket::Bucket;
+use super::thread_id::get_thread_id;
 use super::ArenaArc;
 
 use core::cmp::min;
@@ -8,8 +9,6 @@ use std::sync::Arc;
 use arrayvec::ArrayVec;
 
 use parking_lot::const_rwlock;
-use parking_lot::lock_api::GetThreadId;
-use parking_lot::RawThreadId;
 use parking_lot::RwLock;
 use parking_lot::RwLockUpgradableReadGuard;
 
@@ -97,7 +96,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
             return Err((value, 0));
         }
 
-        let mut pos = RawThreadId::INIT.nonzero_thread_id().get() % len;
+        let mut pos = get_thread_id() % len;
 
         let slice1_iter = guard[pos..].iter();
         let slice2_iter = guard[..pos].iter();

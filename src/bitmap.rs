@@ -1,8 +1,7 @@
+use super::thread_id::get_thread_id;
+
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::Relaxed;
-
-use parking_lot::lock_api::GetThreadId;
-use parking_lot::RawThreadId;
 
 use array_init::array_init;
 
@@ -30,7 +29,7 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
     }
 
     pub(crate) fn allocate(&self) -> Option<usize> {
-        let mut pos = RawThreadId::INIT.nonzero_thread_id().get() % BITARRAY_LEN;
+        let mut pos = get_thread_id() % BITARRAY_LEN;
 
         let slice1_iter = self.0[pos..].iter();
         let slice2_iter = self.0[..pos].iter();
