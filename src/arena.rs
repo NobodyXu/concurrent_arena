@@ -158,6 +158,10 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         cfn_assert!(BUFFER_SIZE <= Self::max_buckets() as usize);
         cfn_assert!(BUFFER_SIZE > 0);
 
+        if new_len == 0 {
+            return true;
+        }
+
         let new_len = min(new_len, Self::max_buckets());
         let mut buffer = ArrayVec::<Arc<Bucket<T, BITARRAY_LEN, LEN>>, BUFFER_SIZE>::new();
 
