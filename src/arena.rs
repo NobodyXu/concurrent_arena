@@ -65,6 +65,8 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
     }
 
     pub const fn const_new() -> Self {
+        Self::check_const_generics();
+
         Self {
             buckets: const_rwlock(Vec::new()),
         }
