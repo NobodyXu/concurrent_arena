@@ -202,3 +202,29 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         self.len() == 0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn test_const_new() {
+        let arena: Arena<_, 1, 64> = Arena::const_new();
+        let slot = arena.insert(()).slot();
+        assert_eq!(arena.remove(slot).unwrap().slot(), slot);
+    }
+
+    #[test]
+    fn test_new() {
+        let arena: Arena<_, 1, 64> = Arena::new();
+        let slot = arena.insert(()).slot();
+        assert_eq!(arena.remove(slot).unwrap().slot(), slot);
+    }
+
+    #[test]
+    fn test_with_capacity() {
+        let arena: Arena<_, 1, 64> = Arena::with_capacity(0);
+        let slot = arena.insert(()).slot();
+        assert_eq!(arena.remove(slot).unwrap().slot(), slot);
+    }
+}
