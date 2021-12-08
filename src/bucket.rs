@@ -59,16 +59,21 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
 
         let entry = &this.entries[index];
 
-        // 1 for the ArenaArc, another is for the Bucket itself.
-        //
-        // Use `Acquire` here to make sure drop is written to memory before
+        // Use `Acquire` here to make sure option is set to None before
         // the entry is reused again.
-        let prev_refcnt = entry.counter.swap(2, Ordering::Acquire);
+        let prev_refcnt = entry.counter.load(Ordering::Acquire);
         debug_assert_eq!(prev_refcnt, 0);
 
         let option = unsafe { &mut *entry.val.get() };
         debug_assert!(option.is_none());
         *option = Some(value);
+
+        // 1 for the ArenaArc, another is for the Bucket itself.
+        //
+        // Set counter after option is set to `Some(...)` to avoid
+        // race condition with `remove`.
+        let prev_refcnt = entry.counter.swap(2, Ordering::Relaxed);
+        debug_assert_eq!(prev_refcnt, 0);
 
         let index = index as u32;
 
@@ -89,7 +94,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
             let mut refcnt = counter.load(Ordering::Relaxed);
 
             loop {
-                if (refcnt & REMOVED_MASK) != 0 {
+                if (refcnt & REMOVED_MASK) != 0 || refcnt == 0 {
                     return None;
                 }
 
