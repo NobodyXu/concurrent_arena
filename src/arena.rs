@@ -120,10 +120,25 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
     ///   It will be used to store `Arc` (8 bytes on 64-bit platform and
     ///   4 bytes on 32-bit platform).
     ///
-    ///   It is suggested to use any value between [10, 30] and less than or equal to
-    ///   `new_len - len`.
+    ///   It is suggested to use any value between [10, 30].
+    ///
+    ///   And having `BUFFER_SIZE` larger than `new_len - len` would only waste stack.
     ///
     /// Reserve `min(new_len, Self::max_buckets())` buckets.
+    ///
+    /// In order to reduce critical section, `reserve` would first acquire
+    /// upgradable read guard, which would not block other readers, but
+    /// do block other threads attempting to acquire upgradable read guard
+    /// and write guard.
+    ///
+    /// It would check the length, and if it is not large enough, then it would
+    /// allocate the buckets on the buffer, upgrade the read guard to
+    /// write guard and move the buckets in the buffer into the underlying vec
+    /// used by `Arena`.
+    ///
+    /// If the buffer isn't large enough for all elements, it will downgrade
+    /// the write guard to upgradable read guard and do the steps described above
+    /// again.
     pub fn reserve<const BUFFER_SIZE: usize>(&self, new_len: u32) {
         cfn_assert!(BUFFER_SIZE <= Self::max_buckets() as usize);
         cfn_assert!(BUFFER_SIZE > 0);
