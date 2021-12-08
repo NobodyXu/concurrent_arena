@@ -134,7 +134,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
     /// do block other threads attempting to acquire upgradable read guard
     /// and write guard.
     ///
-    /// If it fails to acquire the upgradable read lock, it would return false.
+    /// If it fails to acquire the upgradable read lock, it would return `false`.
     ///
     /// This would reduce number of threads waiting to reserve more buckets,
     /// thus reducing the contention for upgradable read lock.
@@ -147,9 +147,13 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
     /// write guard and move the buckets in the buffer into the underlying vec
     /// used by `Arena`.
     ///
+    /// If `new_len <= len`, then return `true`.
+    ///
     /// If the buffer isn't large enough for all elements, it will downgrade
     /// the write guard to upgradable read guard and do the steps described above
     /// again.
+    ///
+    /// After `new_len - len` new buckets are added, return `true`.
     pub fn try_reserve<const BUFFER_SIZE: usize>(&self, new_len: u32) -> bool {
         cfn_assert!(BUFFER_SIZE <= Self::max_buckets() as usize);
         cfn_assert!(BUFFER_SIZE > 0);
