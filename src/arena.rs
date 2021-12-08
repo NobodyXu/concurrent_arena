@@ -5,6 +5,8 @@ use core::cmp::min;
 
 use std::sync::Arc;
 
+use arrayvec::ArrayVec;
+
 use parking_lot::lock_api::GetThreadId;
 use parking_lot::RawThreadId;
 use parking_lot::RwLock;
@@ -99,28 +101,53 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         Err((value, len as u32))
     }
 
-    pub fn reserve(&self, new_len: u32) {
+    /// * `BUFFER_SIZE` - Must be less than or equal to `Self::max_buckets()` and
+    ///   greater than 0.
+    pub fn reserve<const BUFFER_SIZE: usize>(&self, new_len: u32) {
+        cfn_assert!(BUFFER_SIZE <= Self::max_buckets() as usize);
+        cfn_assert!(BUFFER_SIZE > 0);
+
         let new_len = min(new_len, Self::max_buckets());
+        let mut buffer = ArrayVec::<Arc<Bucket<T, BITARRAY_LEN, LEN>>, BUFFER_SIZE>::new();
 
-        // Use an upgradable_read to check if the key has already
-        // been added by another thread.
-        //
-        // Unlike write guard, this UpgradableReadGuard only blocks
-        // other UpgradableReadGuard and WriteGuard, so the readers
-        // will not be blocked while ensuring that there is no other
-        // writer.
-        let guard = self.buckets.upgradable_read();
-        let len = guard.len() as u32;
+        loop {
+            // Use an upgradable_read to check if the key has already
+            // been added by another thread.
+            //
+            // Unlike write guard, this UpgradableReadGuard only blocks
+            // other UpgradableReadGuard and WriteGuard, so the readers
+            // will not be blocked while ensuring that there is no other
+            // writer.
+            let guard = self.buckets.upgradable_read();
+            let len = guard.len() as u32;
 
-        // If another writer has already done the reservation, return.
-        if len >= new_len {
-            return;
-        }
+            // If another writer has already done the reservation, return.
+            if len >= new_len {
+                return;
+            }
 
-        // If no other writer has done the reservation, do it now.
-        let mut guard = RwLockUpgradableReadGuard::upgrade(guard);
-        for _ in len..new_len {
-            guard.push(Arc::new(Bucket::new()));
+            // If no other writer has done the reservation, do it now.
+            //
+            // First, we allocate new bucket and put it in buffer
+            // to avoid blocking the readers.
+            let cnt = new_len - len;
+
+            for _ in 0..min(cnt, BUFFER_SIZE as u32) {
+                buffer.try_push(Arc::new(Bucket::new())).unwrap();
+            }
+
+            // Push all allocated buckets into the buffer at once.
+            {
+                let mut guard = RwLockUpgradableReadGuard::upgrade(guard);
+                // Drain the buffer
+                for new_bucket in buffer.drain(..) {
+                    guard.push(new_bucket);
+                }
+            }
+
+            if cnt <= BUFFER_SIZE as u32 {
+                break;
+            }
         }
     }
 
@@ -132,7 +159,7 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
                     value = val;
 
                     if len != u32::MAX {
-                        self.reserve(len + 1);
+                        self.reserve::<1>(len + 1);
                     }
                 }
             }
