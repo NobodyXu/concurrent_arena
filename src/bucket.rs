@@ -19,12 +19,6 @@ struct Entry<T> {
     val: UnsafeCell<Option<T>>,
 }
 
-impl<T> Default for Entry<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl<T> Entry<T> {
     fn new() -> Self {
         Self {
