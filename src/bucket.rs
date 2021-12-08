@@ -28,6 +28,14 @@ impl<T> Entry<T> {
     }
 }
 
+#[cfg(debug_assertions)]
+impl<T> Drop for Entry<T> {
+    fn drop(&mut self) {
+        assert_eq!(*self.counter.get_mut(), 0);
+        assert!(self.val.get_mut().is_none());
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct Bucket<T, const BITARRAY_LEN: usize, const LEN: usize> {
     bitset: BitMap<BITARRAY_LEN>,
