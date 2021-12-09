@@ -293,4 +293,41 @@ mod tests {
             assert_eq!((**each) as usize, i);
         }
     }
+
+    #[test]
+    fn test_clone() {
+        let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
+
+        let arcs: Vec<_> = (0..64)
+            .into_par_iter()
+            .map(|i| {
+                let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
+
+                assert_eq!(ArenaArc::strong_count(&arc), 2);
+                assert_eq!(*arc, i);
+
+                arc
+            })
+            .collect();
+
+        let arcs_cloned: Vec<_> = arcs
+            .iter()
+            .map(|arc| {
+                let new_arc = arc.clone();
+                assert_eq!(ArenaArc::strong_count(&new_arc), 3);
+                assert_eq!(ArenaArc::strong_count(arc), 3);
+
+                new_arc
+            })
+            .collect();
+
+        drop(arcs);
+        drop(bucket);
+
+        // bucket are dropped, however as long as the arcs
+        // are alive, these values are still kept alive.
+        for (i, each) in arcs_cloned.iter().enumerate() {
+            assert_eq!((**each) as usize, i);
+        }
+    }
 }
