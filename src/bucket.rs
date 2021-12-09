@@ -176,6 +176,13 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BI
         debug_assert!((entry.counter.load(Ordering::Relaxed) & REFCNT_MASK) > 0);
         entry
     }
+
+    pub fn strong_count(this: &Self) -> u8 {
+        let entry = this.get_entry();
+        let cnt = entry.counter.load(Ordering::Relaxed) & REFCNT_MASK;
+        debug_assert!(cnt > 0);
+        cnt
+    }
 }
 
 impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Deref
@@ -254,6 +261,8 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Drop
 
 #[cfg(test)]
 mod tests {
+    use super::ArenaArc;
+
     use std::sync::Arc;
 
     use rayon::prelude::*;
@@ -271,6 +280,7 @@ mod tests {
             .map(|i| {
                 let arc = Bucket::try_insert(&bucket_clone, 0, i).unwrap();
 
+                assert_eq!(ArenaArc::strong_count(&arc), 2);
                 assert_eq!(*arc, i);
 
                 arc
