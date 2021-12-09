@@ -74,6 +74,6 @@ jobs:
       with:
           toolchain: nightly
           override: true
-          components: miri
+          components: miri, rust-src
     - name: Run tests
       run: ./run_tests.sh
