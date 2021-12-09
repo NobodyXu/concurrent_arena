@@ -409,12 +409,14 @@ mod tests {
                 f(arc_cloned.lock());
             });
 
-            sleep(Duration::from_micros(1));
-            f(arc.lock());
+            spawn(move || {
+                sleep(Duration::from_micros(1));
+                f(arc.lock());
 
-            handle.join().unwrap();
+                handle.join().unwrap();
 
-            assert_eq!(*arc.lock(), i + 2);
+                assert_eq!(*arc.lock(), i + 2);
+            });
         });
     }
 }
