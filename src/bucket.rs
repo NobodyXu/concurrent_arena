@@ -49,7 +49,17 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Drop for Bucket<T, BITARRAY
     }
 }
 
-impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN> {
+unsafe impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Sync
+    for Bucket<T, BITARRAY_LEN, LEN>
+{
+}
+
+unsafe impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Send
+    for Bucket<T, BITARRAY_LEN, LEN>
+{
+}
+
+impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN> {
     pub(crate) fn new() -> Self {
         Self {
             bitset: BitMap::new(),
@@ -146,13 +156,13 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN
 }
 
 /// Can have at most `MAX_REFCNT` refcount.
-pub struct ArenaArc<T, const BITARRAY_LEN: usize, const LEN: usize> {
+pub struct ArenaArc<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> {
     slot: u32,
     index: u32,
     bucket: Arc<Bucket<T, BITARRAY_LEN, LEN>>,
 }
 
-impl<T, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BITARRAY_LEN, LEN> {
+impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BITARRAY_LEN, LEN> {
     pub fn slot(&self) -> u32 {
         self.slot
     }
@@ -168,7 +178,9 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BITARRAY_LEN, L
     }
 }
 
-impl<T, const BITARRAY_LEN: usize, const LEN: usize> Deref for ArenaArc<T, BITARRAY_LEN, LEN> {
+impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Deref
+    for ArenaArc<T, BITARRAY_LEN, LEN>
+{
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -178,7 +190,9 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Deref for ArenaArc<T, BITAR
     }
 }
 
-impl<T, const BITARRAY_LEN: usize, const LEN: usize> Clone for ArenaArc<T, BITARRAY_LEN, LEN> {
+impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Clone
+    for ArenaArc<T, BITARRAY_LEN, LEN>
+{
     fn clone(&self) -> Self {
         let entry = self.get_entry();
 
@@ -199,7 +213,9 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Clone for ArenaArc<T, BITAR
     }
 }
 
-impl<T, const BITARRAY_LEN: usize, const LEN: usize> Drop for ArenaArc<T, BITARRAY_LEN, LEN> {
+impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Drop
+    for ArenaArc<T, BITARRAY_LEN, LEN>
+{
     fn drop(&mut self) {
         let entry = self.get_entry();
 

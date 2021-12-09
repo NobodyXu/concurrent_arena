@@ -35,45 +35,49 @@ pub struct Arena<T, const BITARRAY_LEN: usize, const LEN: usize> {
     buckets: RwLock<Vec<Arc<Bucket<T, BITARRAY_LEN, LEN>>>>,
 }
 
-impl<T, const BITARRAY_LEN: usize, const LEN: usize> Default for Arena<T, BITARRAY_LEN, LEN> {
+impl<T: Sync + Send, const BITARRAY_LEN: usize, const LEN: usize> Default
+    for Arena<T, BITARRAY_LEN, LEN>
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
+const fn check_const_generics<const BITARRAY_LEN: usize, const LEN: usize>() {
+    let bits = usize::BITS as usize;
+
+    cfn_assert!(LEN <= (u32::MAX as usize));
+    cfn_assert_eq!(LEN % bits, 0);
+    cfn_assert_ne!(LEN, 0);
+
+    cfn_assert_eq!(LEN / bits, BITARRAY_LEN);
+}
+
 impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
-    const fn check_const_generics() {
-        let bits = usize::BITS as usize;
-
-        cfn_assert!(LEN <= (u32::MAX as usize));
-        cfn_assert_eq!(LEN % bits, 0);
-        cfn_assert_ne!(LEN, 0);
-
-        cfn_assert_eq!(LEN / bits, BITARRAY_LEN);
-    }
-
     /// Maximum buckets `Arena` can have.
     pub const fn max_buckets() -> u32 {
-        Self::check_const_generics();
+        check_const_generics::<BITARRAY_LEN, LEN>();
 
         u32::MAX / (LEN as u32)
     }
 
-    /// Would preallocate 2 buckets.
-    pub fn new() -> Self {
-        Self::with_capacity(2)
-    }
-
     pub const fn const_new() -> Self {
-        Self::check_const_generics();
+        check_const_generics::<BITARRAY_LEN, LEN>();
 
         Self {
             buckets: const_rwlock(Vec::new()),
         }
     }
+}
+
+impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
+    /// Would preallocate 2 buckets.
+    pub fn new() -> Self {
+        Self::with_capacity(2)
+    }
 
     pub fn with_capacity(cap: u32) -> Self {
-        Self::check_const_generics();
+        check_const_generics::<BITARRAY_LEN, LEN>();
 
         let cap = min(cap, Self::max_buckets());
 
