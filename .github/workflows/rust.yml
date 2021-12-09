@@ -68,12 +68,12 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-test-with-miri-${{ hashFiles('**/Cargo.lock') }}-v2
+        key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-test-with-rust-src-${{ hashFiles('**/Cargo.lock') }}-v2
     - name: Install latest nightly
       uses: actions-rs/toolchain@v1
       with:
           toolchain: nightly
           override: true
-          components: miri, rust-src
+          components: rust-src
     - name: Run tests
       run: ./run_tests.sh
