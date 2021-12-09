@@ -280,6 +280,14 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
 mod tests {
     use crate::*;
 
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    use parking_lot::Mutex;
+    use rayon::prelude::*;
+    use rayon::spawn;
+    use std::sync::Arc;
+
     #[test]
     fn test_const_new() {
         let arena: Arena<_, 1, 64> = Arena::const_new();
@@ -299,5 +307,33 @@ mod tests {
         let arena: Arena<_, 1, 64> = Arena::with_capacity(0);
         let slot = arena.insert(()).slot();
         assert_eq!(arena.remove(slot).unwrap().slot(), slot);
+    }
+
+    #[test]
+    fn realworld_test() {
+        let arena: Arc<Arena<Mutex<u32>, 1, 64>> = Arc::new(Arena::with_capacity(0));
+
+        (0..u16::MAX).into_par_iter().for_each(|i| {
+            let i = i as u32;
+
+            let arc = arena.insert(Mutex::new(i));
+
+            assert_eq!(ArenaArc::strong_count(&arc), 2);
+            assert_eq!(*arc.lock(), i);
+
+            let slot = arc.slot();
+
+            let arena = arena.clone();
+
+            spawn(move || {
+                sleep(Duration::from_micros(1));
+
+                let arc = arena.remove(slot).unwrap();
+
+                let mut guard = arc.lock();
+                assert_eq!(*guard, i);
+                *guard = 2000;
+            });
+        });
     }
 }
