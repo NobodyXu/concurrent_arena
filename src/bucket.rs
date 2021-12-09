@@ -254,7 +254,6 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Drop
 
 #[cfg(test)]
 mod tests {
-    use parking_lot::Mutex;
     use std::sync::Arc;
 
     use rayon::prelude::*;
@@ -263,21 +262,25 @@ mod tests {
 
     #[test]
     fn test() {
-        let bucket = Arc::new(Bucket::new());
+        let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
 
         let bucket_clone = bucket.clone();
 
         let arcs: Vec<_> = (0..64)
             .into_par_iter()
-            .map(|i| Bucket::try_insert(&bucket_clone, 0, Mutex::new(i)).unwrap())
+            .map(|i| {
+                let arc = Bucket::try_insert(&bucket_clone, 0, i).unwrap();
+
+                assert_eq!(*arc, i);
+
+                arc
+            })
             .collect();
 
-        assert!(Bucket::try_insert(&bucket, 0, Mutex::new(0)).is_err());
+        assert!(Bucket::try_insert(&bucket, 0, 0).is_err());
 
         for (i, each) in arcs.iter().enumerate() {
-            assert_eq!(*each.lock(), i);
+            assert_eq!((**each) as usize, i);
         }
-
-        todo!()
     }
 }
