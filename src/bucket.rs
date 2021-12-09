@@ -31,8 +31,14 @@ impl<T> Entry<T> {
 #[cfg(debug_assertions)]
 impl<T> Drop for Entry<T> {
     fn drop(&mut self) {
-        assert_eq!(*self.counter.get_mut(), 0);
-        assert!(self.val.get_mut().is_none());
+        let counter = *self.counter.get_mut();
+
+        // It must be either deleted, or is still alive
+        // but no `ArenaArc` reference exist.
+        assert!(counter <= 1);
+        if counter == 0 {
+            assert!(self.val.get_mut().is_none());
+        }
     }
 }
 
