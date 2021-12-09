@@ -10,3 +10,6 @@ array-init = "2.0.0"
 arrayvec = "0.7.2"
 
 parking_lot = "0.11.2"
+
+[dev-dependencies]
+bitvec = "0.20"
