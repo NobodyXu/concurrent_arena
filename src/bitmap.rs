@@ -106,6 +106,9 @@ mod tests {
 
     use bitvec::prelude::*;
 
+    use std::thread::sleep;
+    use std::time::Duration;
+
     use rayon::prelude::*;
 
     const LEN: usize = 512;
@@ -149,5 +152,39 @@ mod tests {
             assert_eq!(index, i);
             assert!(bitmap.load(i as u32));
         }
+    }
+
+    #[test]
+    fn realworld_test() {
+        let bits = usize::BITS as usize;
+
+        let mut bitvec = BitVec::<Lsb0, usize>::with_capacity(LEN * bits);
+        bitvec.resize(LEN * bits, false);
+
+        assert_eq!(bitvec.len(), LEN * bits);
+        assert_eq!(bitvec.count_ones(), 0);
+
+        let arc = Arc::new((
+            BitMap::<LEN>::new(),
+            Mutex::new(bitvec.into_boxed_bitslice()),
+        ));
+
+        let arc_cloned = arc.clone();
+        (0..(LEN * bits * 2)).into_par_iter().for_each(|_| {
+            let index = loop {
+                match arc_cloned.0.allocate() {
+                    Some(index) => break index,
+                    None => (),
+                }
+            };
+            assert!(arc_cloned.0.load(index as u32));
+            assert!(!arc_cloned.1.lock().get_mut(index).unwrap().replace(true));
+
+            sleep(Duration::from_micros(1));
+
+            let mut guard = arc_cloned.1.lock();
+            arc_cloned.0.deallocate(index);
+            assert!(guard.get_mut(index).unwrap().replace(false));
+        });
     }
 }
