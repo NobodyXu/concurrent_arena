@@ -95,6 +95,17 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
 
         true
     }
+
+    #[allow(unused)]
+    pub(crate) fn is_all_one(&self) -> bool {
+        for each in self.0.iter() {
+            if each.load(Relaxed) != usize::MAX {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 #[cfg(test)]
@@ -139,6 +150,8 @@ mod tests {
         let bitvec = arc.1.lock();
 
         assert_eq!(bitvec.count_zeros(), 0);
+
+        assert!(bitmap.is_all_one());
 
         assert!(bitmap.allocate().is_none());
 
