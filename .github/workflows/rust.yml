@@ -70,10 +70,10 @@ jobs:
           target/
         key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-test-with-miri-${{ hashFiles('**/Cargo.lock') }}-v2
     - name: Install latest nightly
-        uses: actions-rs/toolchain@v1
-        with:
-            toolchain: nightly
-            override: true
-            components: miri
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: nightly
+          override: true
+          components: miri
     - name: Run tests
       run: ./run_tests.sh
