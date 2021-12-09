@@ -2,6 +2,7 @@ use super::bitmap::BitMap;
 
 use core::cell::UnsafeCell;
 use core::hint::spin_loop;
+use core::mem::replace;
 use core::ops::Deref;
 
 use std::sync::atomic::{fence, AtomicU8, Ordering};
@@ -85,8 +86,8 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
         debug_assert_eq!(prev_refcnt, 0);
 
         let option = unsafe { &mut *entry.val.get() };
-        debug_assert!(option.is_none());
-        *option = Some(value);
+        let res = replace(option, Some(value));
+        debug_assert!(res.is_none());
 
         // 1 for the ArenaArc, another is for the Bucket itself.
         //
