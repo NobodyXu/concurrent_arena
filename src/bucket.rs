@@ -263,7 +263,13 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Drop
 mod tests {
     use super::ArenaArc;
 
+    use parking_lot::Mutex;
+    use parking_lot::MutexGuard;
     use std::sync::Arc;
+
+    use std::thread::sleep;
+    use std::thread::spawn;
+    use std::time::Duration;
 
     use rayon::prelude::*;
 
@@ -373,5 +379,42 @@ mod tests {
         for (each, i) in new_arcs.iter().zip(64..64 + 32) {
             assert_eq!((**each) as usize, i);
         }
+    }
+
+    #[test]
+    fn realworld_test() {
+        let bucket: Arc<Bucket<Mutex<u32>>> = Arc::new(Bucket::new());
+
+        (0..64).into_par_iter().for_each(|i| {
+            let arc = Bucket::try_insert(&bucket, 0, Mutex::new(i)).unwrap();
+
+            assert_eq!(ArenaArc::strong_count(&arc), 2);
+            assert_eq!(*arc.lock(), i);
+
+            let arc_cloned = arc.clone();
+
+            let f = move |mut guard: MutexGuard<'_, u32>| {
+                if *guard == i {
+                    *guard = i + 1;
+                } else if *guard == i + 1 {
+                    *guard = i + 2;
+                } else {
+                    panic!("");
+                }
+            };
+
+            let handle = spawn(move || {
+                sleep(Duration::from_micros(1));
+
+                f(arc_cloned.lock());
+            });
+
+            sleep(Duration::from_micros(1));
+            f(arc.lock());
+
+            handle.join().unwrap();
+
+            assert_eq!(*arc.lock(), i + 2);
+        });
     }
 }
