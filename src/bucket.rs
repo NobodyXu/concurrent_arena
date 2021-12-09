@@ -193,9 +193,9 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Deref
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        let ptr = self.get_entry().val.get() as *const T;
+        let ptr = self.get_entry().val.get();
 
-        unsafe { &*ptr }
+        unsafe { &*ptr }.as_ref().unwrap()
     }
 }
 
