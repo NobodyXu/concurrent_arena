@@ -139,9 +139,12 @@ mod tests {
             Mutex::new(bitvec.into_boxed_bitslice()),
         ));
 
+        let max_index = (LEN * bits) as usize;
+
         let arc_cloned = arc.clone();
         (0..(LEN * bits)).into_par_iter().for_each(|_| {
             let index = arc_cloned.0.allocate().unwrap();
+            assert!(index <= max_index);
             assert!(arc_cloned.0.load(index as u32));
             assert!(!arc_cloned.1.lock().get_mut(index).unwrap().replace(true));
         });
