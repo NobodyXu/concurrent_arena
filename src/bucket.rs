@@ -270,7 +270,7 @@ mod tests {
     type Bucket<T> = super::Bucket<T, 1, 64>;
 
     #[test]
-    fn test() {
+    fn test_basic() {
         let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
 
         let bucket_clone = bucket.clone();
