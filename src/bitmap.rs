@@ -125,7 +125,26 @@ mod tests {
         let arc_cloned = arc.clone();
         (0..(LEN * bits)).into_par_iter().for_each(|_| {
             let index = arc_cloned.0.allocate().unwrap();
+            assert!(arc_cloned.0.load(index as u32));
             assert!(!arc_cloned.1.lock().get_mut(index).unwrap().replace(true));
         });
+
+        let bitmap = &arc.0;
+        let bitvec = arc.1.lock();
+
+        assert_eq!(bitvec.count_zeros(), 0);
+
+        assert!(bitmap.allocate().is_none());
+
+        for i in 0..(LEN * bits) {
+            assert!(bitmap.load(i as u32));
+            bitmap.deallocate(i);
+
+            assert!(!bitmap.load(i as u32));
+
+            let index = bitmap.allocate().unwrap();
+            assert_eq!(index, i);
+            assert!(bitmap.load(i as u32));
+        }
     }
 }
