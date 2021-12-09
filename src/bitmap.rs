@@ -70,9 +70,12 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
     }
 
     pub(crate) fn deallocate(&self, index: usize) {
-        let chunk = &self.0[index];
+        let bits = usize::BITS as usize;
+
+        let chunk = &self.0[index / bits];
+        let mask = !(1 << (index % bits));
+
         let mut value = chunk.load(Relaxed);
-        let mask = !(1 << index);
 
         loop {
             match compare_exchange(chunk, value, value & mask) {
