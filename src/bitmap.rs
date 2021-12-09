@@ -85,7 +85,7 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
         }
     }
 
-    #[allow(unused)]
+    #[cfg(test)]
     pub(crate) fn is_all_one(&self) -> bool {
         for each in self.0.iter() {
             if each.load(Relaxed) != usize::MAX {
