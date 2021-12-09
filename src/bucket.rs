@@ -156,6 +156,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
 }
 
 /// Can have at most `MAX_REFCNT` refcount.
+#[derive(Debug)]
 pub struct ArenaArc<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> {
     slot: u32,
     index: u32,
