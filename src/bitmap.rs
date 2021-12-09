@@ -93,3 +93,39 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
         true
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::BitMap;
+
+    use parking_lot::Mutex;
+    use std::sync::Arc;
+
+    use bitvec::prelude::*;
+
+    use rayon::prelude::*;
+
+    const LEN: usize = 512;
+
+    #[test]
+    fn test() {
+        let bits = usize::BITS as usize;
+
+        let mut bitvec = BitVec::<Lsb0, usize>::with_capacity(LEN * bits);
+        bitvec.resize(LEN * bits, false);
+
+        assert_eq!(bitvec.len(), LEN * bits);
+        assert_eq!(bitvec.count_ones(), 0);
+
+        let arc = Arc::new((
+            BitMap::<LEN>::new(),
+            Mutex::new(bitvec.into_boxed_bitslice()),
+        ));
+
+        let arc_cloned = arc.clone();
+        (0..(LEN * bits)).into_par_iter().for_each(|_| {
+            let index = arc_cloned.0.allocate().unwrap();
+            assert!(!arc_cloned.1.lock().get_mut(index).unwrap().replace(true));
+        });
+    }
+}
