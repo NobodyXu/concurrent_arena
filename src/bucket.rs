@@ -328,4 +328,50 @@ mod tests {
             assert_eq!((**each) as usize, i);
         }
     }
+
+    #[test]
+    fn test_reuse() {
+        let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
+
+        let mut arcs: Vec<_> = (0..64)
+            .into_par_iter()
+            .map(|i| {
+                let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
+
+                assert_eq!(ArenaArc::strong_count(&arc), 2);
+                assert_eq!(*arc, i);
+
+                arc
+            })
+            .collect();
+
+        for arc in arcs.drain(arcs.len() / 2..) {
+            assert_eq!(ArenaArc::strong_count(&arc), 2);
+            let new_arc = Bucket::remove(bucket.clone(), 0, arc.index);
+            assert_eq!(ArenaArc::strong_count(&arc), 2);
+
+            drop(new_arc);
+            assert_eq!(ArenaArc::strong_count(&arc), 1);
+        }
+
+        let new_arcs: Vec<_> = (64..64 + 32)
+            .into_par_iter()
+            .map(|i| {
+                let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
+
+                assert_eq!(ArenaArc::strong_count(&arc), 2);
+                assert_eq!(*arc, i);
+
+                arc
+            })
+            .collect();
+
+        for (i, each) in arcs.iter().enumerate() {
+            assert_eq!((**each) as usize, i);
+        }
+
+        for (each, i) in new_arcs.iter().zip(64..64 + 32) {
+            assert_eq!((**each) as usize, i);
+        }
+    }
 }
