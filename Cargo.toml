@@ -3,6 +3,13 @@ name = "concurrent_arena"
 version = "0.1.0"
 edition = "2018"
 
+license = "MIT"
+description = "u32 concurrent insertion/removal arena that returns ArenaArc"
+repository = "https://github.com/NobodyXu/concurrency_toolkit"
+
+keywords = ["concurrency", "arena", "shared", "slotmap"]
+categories = ["concurrency"]
+
 [dependencies]
 const_fn_assert = "0.1.2"
 
