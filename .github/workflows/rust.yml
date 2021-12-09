@@ -69,9 +69,11 @@ jobs:
           ~/.cargo/git/db/
           target/
         key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-test-with-miri-${{ hashFiles('**/Cargo.lock') }}-v2
-    - name: Install cargo nightly
-      run: rustup install nightly
-    - name: Install cargo miri
-      run: rustup component add --toolchain nightly miri
+    - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            override: true
+            components: miri
     - name: Run tests
       run: ./run_tests.sh
