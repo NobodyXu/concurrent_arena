@@ -85,17 +85,6 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
         }
     }
 
-    #[cfg(debug_assertions)]
-    pub(crate) fn is_all_zero(&mut self) -> bool {
-        for each in self.0.iter_mut() {
-            if *each.get_mut() != 0 {
-                return false;
-            }
-        }
-
-        true
-    }
-
     #[allow(unused)]
     pub(crate) fn is_all_one(&self) -> bool {
         for each in self.0.iter() {
