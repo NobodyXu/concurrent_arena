@@ -273,12 +273,10 @@ mod tests {
     fn test_basic() {
         let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
 
-        let bucket_clone = bucket.clone();
-
         let arcs: Vec<_> = (0..64)
             .into_par_iter()
             .map(|i| {
-                let arc = Bucket::try_insert(&bucket_clone, 0, i).unwrap();
+                let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
 
                 assert_eq!(ArenaArc::strong_count(&arc), 2);
                 assert_eq!(*arc, i);
