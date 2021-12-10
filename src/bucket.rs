@@ -110,6 +110,49 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
         })
     }
 
+    pub(crate) fn get(
+        this: Arc<Self>,
+        bucket_index: u32,
+        index: u32,
+    ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
+        if this.bitset.load(index) {
+            let counter = &this.entries[index as usize].counter;
+            let mut refcnt = counter.load(Ordering::Relaxed);
+
+            loop {
+                if (refcnt & REMOVED_MASK) != 0 {
+                    return None;
+                }
+
+                if refcnt == 0 {
+                    // The variable is not yet fully initialized.
+                    // Reload the refcnt and check again.
+                    spin_loop();
+                    refcnt = counter.load(Ordering::Relaxed);
+                    continue;
+                }
+
+                match counter.compare_exchange_weak(
+                    refcnt,
+                    refcnt + 1,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => break,
+                    Err(new_refcnt) => refcnt = new_refcnt,
+                }
+            }
+
+            Some(ArenaArc {
+                slot: bucket_index * (LEN as u32) + index,
+                index,
+                bucket: this,
+            })
+        } else {
+            None
+        }
+    }
+
     pub(crate) fn remove(
         this: Arc<Self>,
         bucket_index: u32,
@@ -327,6 +370,23 @@ mod tests {
         assert!(Bucket::try_insert(&bucket, 0, 0).is_err());
 
         for (i, each) in arcs.iter().enumerate() {
+            assert_eq!((**each) as usize, i);
+        }
+
+        let arcs_get: Vec<_> = (&arcs)
+            .into_par_iter()
+            .enumerate()
+            .map(|(i, orig_arc)| {
+                let arc = Bucket::get(Arc::clone(&bucket), 0, orig_arc.index).unwrap();
+
+                assert_eq!(ArenaArc::strong_count(&arc), 3);
+                assert_eq!(*arc as usize, i);
+
+                arc
+            })
+            .collect();
+
+        for (i, each) in arcs_get.iter().enumerate() {
             assert_eq!((**each) as usize, i);
         }
     }
