@@ -183,6 +183,39 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BI
         debug_assert!(cnt > 0);
         cnt
     }
+
+    /// Remove this element.
+    ///
+    /// Return true if succeeds, false if it is already removed.
+    pub fn remove(this: &Self) -> bool {
+        let counter = &this.get_entry().counter;
+        let mut refcnt = counter.load(Ordering::Relaxed);
+
+        loop {
+            debug_assert_ne!(refcnt & REFCNT_MASK, 0);
+
+            if (refcnt & REMOVED_MASK) != 0 {
+                // already removed
+                return false;
+            }
+
+            // Since the element is not removed, there is at least two ref to it:
+            //  - From the bucket itself
+            //  - From `self`
+            debug_assert_ne!(refcnt, 1);
+
+            match counter.compare_exchange_weak(
+                refcnt,
+                // Reduce refcnt by one since it is removed from bucket.
+                (refcnt - 1) | REMOVED_MASK,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => return true,
+                Err(new_refcnt) => refcnt = new_refcnt,
+            }
+        }
+    }
 }
 
 impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Deref
