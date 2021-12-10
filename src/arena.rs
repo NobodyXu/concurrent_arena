@@ -149,6 +149,9 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
     /// * `new_len` - For best performance, try to set this to number of CPUs
     ///   that are going to be concurrently access `Arena`.
     ///
+    ///   If `new_len` is greater than `Self::max_buckets()`, then only
+    ///   `Self::max_buckets()` will be reserved.
+    ///
     /// Try to reserve `min(new_len, Self::max_buckets())` buckets.
     ///
     /// In order to reduce critical section, `reserve` would try to first acquire
