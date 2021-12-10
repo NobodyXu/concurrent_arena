@@ -143,6 +143,9 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
     ///
     ///   And having `BUFFER_SIZE` larger than `new_len - len` would only waste stack.
     ///
+    /// * `new_len` - For best performance, try to set this to number of CPUs
+    ///   that are going to be concurrently access `Arena`.
+    ///
     /// Try to reserve `min(new_len, Self::max_buckets())` buckets.
     ///
     /// In order to reduce critical section, `reserve` would try to first acquire
