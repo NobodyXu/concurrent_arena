@@ -300,22 +300,22 @@ mod tests {
     #[test]
     fn test_const_new() {
         let arena: Arena<_, 1, 64> = Arena::const_new();
-        let slot = arena.insert(()).slot();
-        assert_eq!(arena.remove(slot).unwrap().slot(), slot);
+        let slot = ArenaArc::slot(&arena.insert(()));
+        assert_eq!(ArenaArc::slot(&arena.remove(slot).unwrap()), slot);
     }
 
     #[test]
     fn test_new() {
         let arena: Arena<_, 1, 64> = Arena::new();
-        let slot = arena.insert(()).slot();
-        assert_eq!(arena.remove(slot).unwrap().slot(), slot);
+        let slot = ArenaArc::slot(&arena.insert(()));
+        assert_eq!(ArenaArc::slot(&arena.remove(slot).unwrap()), slot);
     }
 
     #[test]
     fn test_with_capacity() {
         let arena: Arena<_, 1, 64> = Arena::with_capacity(0);
-        let slot = arena.insert(()).slot();
-        assert_eq!(arena.remove(slot).unwrap().slot(), slot);
+        let slot = ArenaArc::slot(&arena.insert(()));
+        assert_eq!(ArenaArc::slot(&arena.remove(slot).unwrap()), slot);
     }
 
     #[test]
@@ -330,7 +330,7 @@ mod tests {
             assert_eq!(ArenaArc::strong_count(&arc), 2);
             assert_eq!(*arc.lock(), i);
 
-            let slot = arc.slot();
+            let slot = ArenaArc::slot(&arc);
 
             let arena = arena.clone();
 

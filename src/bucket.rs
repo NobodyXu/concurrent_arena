@@ -163,22 +163,22 @@ pub struct ArenaArc<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize>
 }
 
 impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BITARRAY_LEN, LEN> {
-    pub fn slot(&self) -> u32 {
-        self.slot
+    pub fn slot(this: &Self) -> u32 {
+        this.slot
     }
 
-    fn get_index(&self) -> usize {
-        self.index as usize
+    fn get_index(this: &Self) -> usize {
+        this.index as usize
     }
 
-    fn get_entry(&self) -> &Entry<T> {
-        let entry = &self.bucket.entries[self.get_index()];
+    fn get_entry(this: &Self) -> &Entry<T> {
+        let entry = &this.bucket.entries[Self::get_index(this)];
         debug_assert!((entry.counter.load(Ordering::Relaxed) & REFCNT_MASK) > 0);
         entry
     }
 
     pub fn strong_count(this: &Self) -> u8 {
-        let entry = this.get_entry();
+        let entry = Self::get_entry(this);
         let cnt = entry.counter.load(Ordering::Relaxed) & REFCNT_MASK;
         debug_assert!(cnt > 0);
         cnt
@@ -188,7 +188,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BI
     ///
     /// Return true if succeeds, false if it is already removed.
     pub fn remove(this: &Self) -> bool {
-        let counter = &this.get_entry().counter;
+        let counter = &Self::get_entry(this).counter;
         let mut refcnt = counter.load(Ordering::Relaxed);
 
         loop {
@@ -224,7 +224,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Deref
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        let ptr = self.get_entry().val.get();
+        let ptr = Self::get_entry(self).val.get();
 
         unsafe { &*ptr }.as_ref().unwrap()
     }
@@ -234,7 +234,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Clone
     for ArenaArc<T, BITARRAY_LEN, LEN>
 {
     fn clone(&self) -> Self {
-        let entry = self.get_entry();
+        let entry = Self::get_entry(self);
 
         // According to [Boost documentation][1], increasing the refcount
         // can be done using Relaxed operation since there are at least one
@@ -257,7 +257,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Drop
     for ArenaArc<T, BITARRAY_LEN, LEN>
 {
     fn drop(&mut self) {
-        let entry = self.get_entry();
+        let entry = Self::get_entry(self);
 
         // According to [Boost documentation][1], decreasing refcount must be done
         // using Release to ensure the write to the value happens before the
@@ -287,7 +287,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Drop
             // the entry is reused again.
             entry.counter.store(0, Ordering::Release);
 
-            self.bucket.bitset.deallocate(self.get_index());
+            self.bucket.bitset.deallocate(Self::get_index(self));
         }
     }
 }
