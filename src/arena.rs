@@ -190,8 +190,8 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
         let new_len = min(new_len, Self::max_buckets());
         let mut buffer = ArrayVec::<Arc<Bucket<T, BITARRAY_LEN, LEN>>, BUFFER_SIZE>::new();
 
-        // Use an upgradable_read to check if the key has already
-        // been added by another thread.
+        // Use an upgradable_read to check if another thread has allocated
+        // the buckets.
         //
         // Unlike write guard, this UpgradableReadGuard only blocks
         // other UpgradableReadGuard and WriteGuard, so the readers
