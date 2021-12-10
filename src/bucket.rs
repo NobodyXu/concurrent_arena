@@ -405,13 +405,23 @@ mod tests {
             })
             .collect();
 
-        for (i, each) in arcs.iter().enumerate() {
-            assert_eq!((**each) as usize, i);
-        }
+        let handle1 = spawn(move || {
+            arcs.into_par_iter().enumerate().for_each(|(i, each)| {
+                assert_eq!((*each) as usize, i);
+            });
+        });
 
-        for (each, i) in new_arcs.iter().zip(64..64 + 32) {
-            assert_eq!((**each) as usize, i);
-        }
+        let handle2 = spawn(move || {
+            new_arcs
+                .into_par_iter()
+                .zip(64..64 + 32)
+                .for_each(|(each, i)| {
+                    assert_eq!((*each) as usize, i);
+                });
+        });
+
+        handle1.join().unwrap();
+        handle2.join().unwrap();
     }
 
     #[test]
@@ -448,13 +458,23 @@ mod tests {
             })
             .collect();
 
-        for (i, each) in arcs.iter().enumerate() {
-            assert_eq!((**each) as usize, i);
-        }
+        let handle1 = spawn(move || {
+            arcs.into_par_iter().enumerate().for_each(|(i, each)| {
+                assert_eq!((*each) as usize, i);
+            });
+        });
 
-        for (each, i) in new_arcs.iter().zip(64..64 + 32) {
-            assert_eq!((**each) as usize, i);
-        }
+        let handle2 = spawn(move || {
+            new_arcs
+                .into_par_iter()
+                .zip(64..64 + 32)
+                .for_each(|(each, i)| {
+                    assert_eq!((*each) as usize, i);
+                });
+        });
+
+        handle1.join().unwrap();
+        handle2.join().unwrap();
     }
 
     #[test]
