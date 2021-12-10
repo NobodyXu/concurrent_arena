@@ -9,7 +9,7 @@ RUSTFLAGS='-Zsanitizer=address' cargo +nightly test -- --nocapture
 
 export RUSTFLAGS='-Zsanitizer=thread'
 exec cargo +nightly test \
-    -Z build-std --target --target x86_64-unknown-linux-gnu -- --nocapture
+    -Z build-std --target --target $(uname -m)-unknown-linux-gnu -- --nocapture
 
 #export MIRIFLAGS="-Zmiri-disable-isolation"
 #exec cargo +nightly miri test -- --nocapture
