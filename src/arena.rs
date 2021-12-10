@@ -21,6 +21,9 @@ use const_fn_assert::{cfn_assert, cfn_assert_eq, cfn_assert_ne};
 /// * `BITARRAY_LEN` - Number bits in the bitmap per bucket.
 ///   Must be equal to `LEN / usize::BITS`.
 ///
+///   For best performance, try to set this to number of CPUs that are going
+///   to access `Arena` concurrently.
+///
 /// `Arena` stores the elements in buckets to ensure that the address
 /// for elements are stable while improving efficiency.
 ///
