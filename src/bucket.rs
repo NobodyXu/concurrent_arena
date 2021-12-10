@@ -478,6 +478,55 @@ mod tests {
     }
 
     #[test]
+    fn test_concurrent_remove() {
+        let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
+
+        let arcs: Vec<_> = (0..64)
+            .into_par_iter()
+            .map(|i| {
+                let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
+
+                assert_eq!(ArenaArc::strong_count(&arc), 2);
+                assert_eq!(*arc, i);
+
+                arc
+            })
+            .collect();
+
+        arcs.into_par_iter().for_each(|arc| {
+            assert_eq!(ArenaArc::strong_count(&arc), 2);
+            let new_arc = Bucket::remove(bucket.clone(), 0, arc.index);
+            assert_eq!(ArenaArc::strong_count(&arc), 2);
+
+            drop(new_arc);
+            assert_eq!(ArenaArc::strong_count(&arc), 1);
+        });
+    }
+
+    #[test]
+    fn test_concurrent_remove2() {
+        let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
+
+        let arcs: Vec<_> = (0..64)
+            .into_par_iter()
+            .map(|i| {
+                let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
+
+                assert_eq!(ArenaArc::strong_count(&arc), 2);
+                assert_eq!(*arc, i);
+
+                arc
+            })
+            .collect();
+
+        arcs.into_par_iter().for_each(|arc| {
+            assert_eq!(ArenaArc::strong_count(&arc), 2);
+            ArenaArc::remove(&arc);
+            assert_eq!(ArenaArc::strong_count(&arc), 1);
+        });
+    }
+
+    #[test]
     fn realworld_test() {
         let bucket: Arc<Bucket<Mutex<u32>>> = Arc::new(Bucket::new());
 
