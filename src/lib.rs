@@ -1,3 +1,4 @@
+mod arcs;
 mod arena;
 mod bitmap;
 mod bucket;
