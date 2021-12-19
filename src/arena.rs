@@ -1,17 +1,10 @@
+use super::arcs::Arcs;
 use super::bucket::Bucket;
 use super::thread_id::get_thread_id;
+use super::Arc;
 use super::ArenaArc;
 
 use core::cmp::min;
-
-use std::sync::Arc;
-
-use arrayvec::ArrayVec;
-
-use parking_lot::const_rwlock;
-use parking_lot::RwLock;
-use parking_lot::RwLockUpgradableReadGuard;
-use parking_lot::RwLockWriteGuard;
 
 use const_fn_assert::{cfn_assert, cfn_assert_eq, cfn_assert_ne};
 
@@ -33,9 +26,8 @@ use const_fn_assert::{cfn_assert, cfn_assert_eq, cfn_assert_ne};
 /// also waste space if it is unused.
 ///
 /// And, allocating a large chunk of memory takes more time.
-#[derive(Debug)]
 pub struct Arena<T, const BITARRAY_LEN: usize, const LEN: usize> {
-    buckets: RwLock<Vec<Arc<Bucket<T, BITARRAY_LEN, LEN>>>>,
+    buckets: Arcs<Arc<Bucket<T, BITARRAY_LEN, LEN>>>,
 }
 
 impl<T: Sync + Send, const BITARRAY_LEN: usize, const LEN: usize> Default
@@ -64,11 +56,11 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
         u32::MAX / (LEN as u32)
     }
 
-    pub const fn const_new() -> Self {
+    pub fn const_new() -> Self {
         check_const_generics::<BITARRAY_LEN, LEN>();
 
         Self {
-            buckets: const_rwlock(Vec::new()),
+            buckets: Arcs::new(),
         }
     }
 }
@@ -83,15 +75,11 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
         check_const_generics::<BITARRAY_LEN, LEN>();
 
         let cap = min(cap, Self::max_buckets());
+        let buckets = Arcs::new();
 
-        let mut buckets = Vec::with_capacity(cap as usize);
-        for _ in 0..cap {
-            buckets.push(Arc::new(Bucket::new()));
-        }
+        buckets.grow(cap as usize, Arc::default);
 
-        Self {
-            buckets: RwLock::new(buckets),
-        }
+        Self { buckets }
     }
 
     /// Return Ok(arc) on success, or Err((value, len)) where value is
@@ -110,8 +98,8 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
     /// minimize the possibility on two threads trying to access and modify the
     /// same variable using atomic instructions, thus improving efficiency.
     pub fn try_insert(&self, mut value: T) -> Result<ArenaArc<T, BITARRAY_LEN, LEN>, (T, u32)> {
-        let guard = self.buckets.read();
-        let len = guard.len();
+        let slice = self.buckets.as_slice();
+        let len = slice.len();
 
         debug_assert!(len <= Self::max_buckets() as usize);
 
@@ -121,8 +109,8 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
 
         let mut pos = get_thread_id() % len;
 
-        let slice1_iter = guard[pos..].iter();
-        let slice2_iter = guard[..pos].iter();
+        let slice1_iter = slice[pos..].iter();
+        let slice2_iter = slice[..pos].iter();
 
         for bucket in slice1_iter.chain(slice2_iter) {
             match Bucket::try_insert(bucket, pos as u32, value) {
@@ -179,62 +167,15 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
     /// again.
     ///
     /// After `new_len - len` new buckets are added, return `true`.
-    pub fn try_reserve<const BUFFER_SIZE: usize>(&self, new_len: u32) -> bool {
-        cfn_assert!(BUFFER_SIZE <= Self::max_buckets() as usize);
-        cfn_assert!(BUFFER_SIZE > 0);
-
+    pub fn try_reserve(&self, new_len: u32) -> bool {
         if new_len == 0 {
             return true;
         }
 
         let new_len = min(new_len, Self::max_buckets());
-        let mut buffer = ArrayVec::<Arc<Bucket<T, BITARRAY_LEN, LEN>>, BUFFER_SIZE>::new();
-
-        // Use an upgradable_read to check if another thread has allocated
-        // the buckets.
-        //
-        // Unlike write guard, this UpgradableReadGuard only blocks
-        // other UpgradableReadGuard and WriteGuard, so the readers
-        // will not be blocked while ensuring that there is no other
-        // writer.
-        let mut read_guard = match self.buckets.try_upgradable_read() {
-            Some(read_guard) => read_guard,
-            None => return false,
-        };
-
-        let len = read_guard.len() as u32;
-
-        // If another writer has already done the reservation, return.
-        if len >= new_len {
-            return true;
-        }
-
-        let mut cnt = new_len - len;
-
-        loop {
-            // If no other writer has done the reservation, do it now.
-            //
-            // First, we allocate new bucket and put it in buffer
-            // to avoid blocking the readers.
-            for _ in 0..min(cnt, BUFFER_SIZE as u32) {
-                buffer.push(Arc::new(Bucket::new()));
-            }
-
-            cnt -= buffer.len() as u32;
-
-            // Push all allocated buckets into the buffer at once.
-            let mut write_guard = RwLockUpgradableReadGuard::upgrade(read_guard);
-            // Drain the buffer
-            for new_bucket in buffer.drain(..) {
-                write_guard.push(new_bucket);
-            }
-
-            if cnt == 0 {
-                return true;
-            }
-
-            read_guard = RwLockWriteGuard::downgrade_to_upgradable(write_guard);
-        }
+        self.buckets
+            .try_grow(new_len as usize, Arc::default)
+            .is_ok()
     }
 
     /// Insert one value.
@@ -257,7 +198,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
                         // reservation.
                         //
                         // We can simply restart operation, waiting for it to be done.
-                        self.try_reserve::<1>(len + 1);
+                        self.try_reserve(len + 4);
                     }
                 }
             }
@@ -270,7 +211,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
         let bucket_index = slot / (LEN as u32);
         let index = slot % (LEN as u32);
 
-        let bucket = self.buckets.read()[bucket_index as usize].clone();
+        let bucket = self.buckets.as_slice()[bucket_index as usize].clone();
 
         Bucket::remove(bucket, bucket_index, index)
     }
@@ -281,18 +222,18 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
         let bucket_index = slot / (LEN as u32);
         let index = slot % (LEN as u32);
 
-        let bucket = self.buckets.read()[bucket_index as usize].clone();
+        let bucket = self.buckets.as_slice()[bucket_index as usize].clone();
 
         Bucket::get(bucket, bucket_index, index)
     }
 
     /// Return number of buckets allocated.
     pub fn len(&self) -> u32 {
-        self.buckets.read().len() as u32
+        self.buckets.len() as u32
     }
 
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.buckets.is_empty()
     }
 }
 
