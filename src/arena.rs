@@ -145,9 +145,10 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
     /// If there isn't enough buckets, then try to reserve one bucket and
     /// restart the operation.
     pub fn insert(&self, mut value: T) -> ArenaArc<T, BITARRAY_LEN, LEN> {
-        loop {
+        // Fast path where `try_reserve` is used to avoid locking.
+        for _ in 0..5 {
             match self.try_insert(value) {
-                Ok(arc) => break arc,
+                Ok(arc) => return arc,
                 Err((val, len)) => {
                     value = val;
 
@@ -161,6 +162,22 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
                         //
                         // We can simply restart operation, waiting for it to be done.
                         self.try_reserve(len + 4);
+                    }
+                }
+            }
+        }
+
+        // Slow path where `reserve` is used.
+        loop {
+            match self.try_insert(value) {
+                Ok(arc) => break arc,
+                Err((val, len)) => {
+                    value = val;
+
+                    // If len == Self::max_buckets(), then we would have to
+                    // wait for slots to be removed from `Arena`.
+                    if len != Self::max_buckets() {
+                        self.reserve(len + 4);
                     }
                 }
             }
