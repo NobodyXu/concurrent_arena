@@ -139,6 +139,17 @@ impl<T> Deref for Slice<'_, T> {
     }
 }
 
+/// Thread sanitizer produces false positive in this test.
+///
+/// This has been discussed in
+/// [this issue](https://github.com/vorner/arc-swap/issues/71)
+/// and the failure can only be reproduced on x86-64-unknown-linux-gnu.
+/// It cannot be reproduced on MacOS.
+///
+/// Since crate arc-swap is a cross platform crate with no assembly used
+/// or any x86 specific feature, this can be some bugs in the allocator
+/// or the thread sanitizer.
+#[cfg(not(feature = "thread-sanitizer"))]
 #[cfg(test)]
 mod tests {
     use super::Arcs;
@@ -148,17 +159,6 @@ mod tests {
 
     use rayon::prelude::*;
 
-    /// Thread sanitizer produces false positive in this test.
-    ///
-    /// This has been discussed in
-    /// [this issue](https://github.com/vorner/arc-swap/issues/71)
-    /// and the failure can only be reproduced on x86-64-unknown-linux-gnu.
-    /// It cannot be reproduced on MacOS.
-    ///
-    /// Since crate arc-swap is a cross platform crate with no assembly used
-    /// or any x86 specific feature, this can be some bugs in the allocator
-    /// or the thread sanitizer.
-    #[cfg(not(feature = "thread-sanitizer"))]
     #[test]
     fn test() {
         let bag: Arc<Arcs<Arc<Mutex<u32>>>> = Arc::new(Arcs::new());

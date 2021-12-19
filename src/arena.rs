@@ -223,14 +223,6 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
 mod tests {
     use crate::*;
 
-    use std::thread::sleep;
-    use std::time::Duration;
-
-    use parking_lot::Mutex;
-    use rayon::prelude::*;
-    use rayon::spawn;
-    use std::sync::Arc;
-
     #[test]
     fn test_const_new() {
         let arena: Arena<_, 1, 64> = Arena::const_new();
@@ -265,6 +257,14 @@ mod tests {
     #[cfg(not(feature = "thread-sanitizer"))]
     #[test]
     fn realworld_test() {
+        use std::thread::sleep;
+        use std::time::Duration;
+
+        use parking_lot::Mutex;
+        use rayon::prelude::*;
+        use rayon::spawn;
+        use std::sync::Arc;
+
         let arena: Arc<Arena<Mutex<u32>, 1, 64>> = Arc::new(Arena::with_capacity(0));
 
         (0..u16::MAX).into_par_iter().for_each(|i| {
