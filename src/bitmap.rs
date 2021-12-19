@@ -1,13 +1,13 @@
 use super::thread_id::get_thread_id;
 
 use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering::{self, Relaxed};
+use std::sync::atomic::Ordering::Relaxed;
 
 use array_init::array_init;
 
 fn compare_exchange(atomic: &AtomicUsize, curr: usize, new: usize) -> Result<(), usize> {
     atomic
-        .compare_exchange_weak(curr, new, Ordering::SeqCst, Ordering::SeqCst)
+        .compare_exchange_weak(curr, new, Relaxed, Relaxed)
         .map(|_| ())
 }
 
