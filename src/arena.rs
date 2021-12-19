@@ -184,8 +184,9 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
         }
     }
 
-    /// May enter busy loop if the slot is not fully initialized, however
-    /// the busy loop does not hold the read lock of the underlying `Vec`.
+    /// May enter busy loop if the slot is not fully initialized.
+    ///
+    /// This function is lock free.
     pub fn remove(&self, slot: u32) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
         let bucket_index = slot / (LEN as u32);
         let index = slot % (LEN as u32);
@@ -195,8 +196,9 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
         Bucket::remove(bucket, bucket_index, index)
     }
 
-    /// May enter busy loop if the slot is not fully initialized, however
-    /// the busy loop does not hold the read lock of the underlying `Vec`.
+    /// May enter busy loop if the slot is not fully initialized.
+    ///
+    /// This function is lock free.
     pub fn get(&self, slot: u32) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
         let bucket_index = slot / (LEN as u32);
         let index = slot % (LEN as u32);
