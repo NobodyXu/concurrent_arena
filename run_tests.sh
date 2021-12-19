@@ -19,5 +19,7 @@ for _ in $rep; do
         -Z build-std --target --target $(uname -m)-unknown-linux-gnu -- --nocapture
 done
 
-#export MIRIFLAGS="-Zmiri-disable-isolation"
-#exec cargo +nightly miri test -- --nocapture
+export MIRIFLAGS="-Zmiri-disable-isolation"
+for _ in $rep; do
+    cargo +nightly miri test -- --nocapture
+done
