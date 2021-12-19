@@ -26,6 +26,10 @@ use const_fn_assert::{cfn_assert, cfn_assert_eq, cfn_assert_ne};
 /// also waste space if it is unused.
 ///
 /// And, allocating a large chunk of memory takes more time.
+///
+/// `Arena` internally stores the array of buckets as a `triomphe::ThinArc`
+/// and use `ArcSwapAny` to grow the array atomically, without blocking any
+/// reader.
 pub struct Arena<T, const BITARRAY_LEN: usize, const LEN: usize> {
     buckets: Arcs<Arc<Bucket<T, BITARRAY_LEN, LEN>>>,
 }
@@ -86,17 +90,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
     /// the input param `value` and `len` is the length of the `Arena` at the time
     /// of insertion.
     ///
-    /// # How it works
-    ///
-    /// `try_insert` would acquire the read guard and iterate the entire underlying
-    /// backing `Vec`, starting from a random position decided by the unique thread id.
-    ///
-    /// It would then try to insert a new entry in `Bucket`, which also iterate over
-    /// the bitmap starting from a random position decided by the unique thread id.
-    ///
-    /// Using the approach described above to distribute insertion requests, we can
-    /// minimize the possibility on two threads trying to access and modify the
-    /// same variable using atomic instructions, thus improving efficiency.
+    /// This function is lock-free.
     pub fn try_insert(&self, mut value: T) -> Result<ArenaArc<T, BITARRAY_LEN, LEN>, (T, u32)> {
         let slice = self.buckets.as_slice();
         let len = slice.len();
@@ -124,49 +118,9 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
         Err((value, len as u32))
     }
 
-    /// * `BUFFER_SIZE` - Must be less than or equal to `Self::max_buckets()` and
-    ///   greater than 0.
-    ///
-    ///   It will be used to store `Arc` (8 bytes on 64-bit platform and
-    ///   4 bytes on 32-bit platform).
-    ///
-    ///   It is suggested to use any value between [10, 30].
-    ///
-    ///   And having `BUFFER_SIZE` larger than `new_len - len` would only waste stack.
-    ///
-    /// * `new_len` - For best performance, try to set this to number of CPUs
-    ///   that are going to be concurrently access `Arena`.
-    ///
-    ///   If `new_len` is greater than `Self::max_buckets()`, then only
-    ///   `Self::max_buckets()` will be reserved.
-    ///
     /// Try to reserve `min(new_len, Self::max_buckets())` buckets.
     ///
-    /// In order to reduce critical section, `reserve` would try to first acquire
-    /// upgradable read guard, which would not block other readers, but
-    /// do block other threads attempting to acquire upgradable read guard
-    /// and write guard.
-    ///
-    /// If it fails to acquire the upgradable read lock, it would return `false`.
-    ///
-    /// This would reduce number of threads waiting to reserve more buckets,
-    /// thus reducing the contention for upgradable read lock.
-    ///
-    /// These threads could give up reservation and try to `insert` new keys instead,
-    /// as others might have already reserve enough space for it.
-    ///
-    /// It would check the length, and if it is not large enough, then it would
-    /// allocate the buckets on the buffer, upgrade the read guard to
-    /// write guard and move the buckets in the buffer into the underlying vec
-    /// used by `Arena`.
-    ///
-    /// If `new_len <= len`, then return `true`.
-    ///
-    /// If the buffer isn't large enough for all elements, it will downgrade
-    /// the write guard to upgradable read guard and do the steps described above
-    /// again.
-    ///
-    /// After `new_len - len` new buckets are added, return `true`.
+    /// This function is technically lock-free.
     pub fn try_reserve(&self, new_len: u32) -> bool {
         if new_len == 0 {
             return true;
@@ -228,10 +182,13 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
     }
 
     /// Return number of buckets allocated.
+    ///
+    /// This function is lock free.
     pub fn len(&self) -> u32 {
         self.buckets.len() as u32
     }
 
+    /// This function is lock free.
     pub fn is_empty(&self) -> bool {
         self.buckets.is_empty()
     }
