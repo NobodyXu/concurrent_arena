@@ -270,31 +270,42 @@ mod tests {
         assert_eq!(ArenaArc::slot(&arena.remove(slot).unwrap()), slot);
     }
 
-    //#[test]
-    //fn realworld_test() {
-    //    let arena: Arc<Arena<Mutex<u32>, 1, 64>> = Arc::new(Arena::with_capacity(0));
+    /// Thread sanitizer produces false positive in this test.
+    ///
+    /// This has been discussed in
+    /// [this issue](https://github.com/vorner/arc-swap/issues/71)
+    /// and the failure can only be reproduced on x86-64-unknown-linux-gnu.
+    /// It cannot be reproduced on MacOS.
+    ///
+    /// Since crate arc-swap is a cross platform crate with no assembly used
+    /// or any x86 specific feature, this can be some bugs in the allocator
+    /// or the thread sanitizer.
+    #[cfg(not(feature = "thread-sanitizer"))]
+    #[test]
+    fn realworld_test() {
+        let arena: Arc<Arena<Mutex<u32>, 1, 64>> = Arc::new(Arena::with_capacity(0));
 
-    //    (0..u16::MAX).into_par_iter().for_each(|i| {
-    //        let i = i as u32;
+        (0..u16::MAX).into_par_iter().for_each(|i| {
+            let i = i as u32;
 
-    //        let arc = arena.insert(Mutex::new(i));
+            let arc = arena.insert(Mutex::new(i));
 
-    //        assert_eq!(ArenaArc::strong_count(&arc), 2);
-    //        assert_eq!(*arc.lock(), i);
+            assert_eq!(ArenaArc::strong_count(&arc), 2);
+            assert_eq!(*arc.lock(), i);
 
-    //        let slot = ArenaArc::slot(&arc);
+            let slot = ArenaArc::slot(&arc);
 
-    //        let arena = arena.clone();
+            let arena = arena.clone();
 
-    //        spawn(move || {
-    //            sleep(Duration::from_micros(1));
+            spawn(move || {
+                sleep(Duration::from_micros(1));
 
-    //            let arc = arena.remove(slot).unwrap();
+                let arc = arena.remove(slot).unwrap();
 
-    //            let mut guard = arc.lock();
-    //            assert_eq!(*guard, i);
-    //            *guard = 2000;
-    //        });
-    //    });
-    //}
+                let mut guard = arc.lock();
+                assert_eq!(*guard, i);
+                *guard = 2000;
+            });
+        });
+    }
 }
