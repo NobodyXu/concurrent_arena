@@ -58,6 +58,14 @@ unsafe impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Send
 {
 }
 
+impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Default
+    for Bucket<T, BITARRAY_LEN, LEN>
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN> {
     pub(crate) fn new() -> Self {
         Self {
