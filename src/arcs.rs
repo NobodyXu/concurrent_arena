@@ -10,12 +10,12 @@ use parking_lot::Mutex;
 
 use triomphe::ThinArc;
 
-pub(crate) struct AtomicBag<T> {
+pub(crate) struct Arcs<T> {
     array: ArcSwapAny<Option<ThinArc<(), T>>>,
     mutex: Mutex<()>,
 }
 
-impl<T> AtomicBag<T> {
+impl<T> Arcs<T> {
     pub(crate) fn new() -> Self {
         Self {
             array: ArcSwapAny::new(None),
@@ -36,7 +36,7 @@ impl<T> AtomicBag<T> {
     }
 }
 
-impl<T: Clone> AtomicBag<T> {
+impl<T: Clone> Arcs<T> {
     pub(crate) fn grow(&self, new_len: usize, f: impl FnMut() -> T) {
         if new_len != 0 || self.len() < new_len {
             let _guard = self.mutex.lock();
@@ -101,7 +101,7 @@ impl<T: Clone> AtomicBag<T> {
 }
 
 /// Slice is just a temporary borrow of the object.
-pub(crate) struct Slice<'a, T>(Guard<Option<ThinArc<(), T>>>, PhantomData<&'a AtomicBag<T>>);
+pub(crate) struct Slice<'a, T>(Guard<Option<ThinArc<(), T>>>, PhantomData<&'a Arcs<T>>);
 
 impl<T> Slice<'_, T> {
     #[cfg(debug_assertions)]
@@ -148,7 +148,7 @@ impl<T> Slice<'_, T> {
 
 #[cfg(test)]
 mod tests {
-    use super::AtomicBag;
+    use super::Arcs;
 
     use core::ptr;
 
@@ -170,7 +170,7 @@ mod tests {
     #[cfg(not(feature = "thread-sanitizer"))]
     #[test]
     fn test() {
-        let bag: Arc<AtomicBag<Arc<Mutex<u32>>>> = Arc::new(AtomicBag::new());
+        let bag: Arc<Arcs<Arc<Mutex<u32>>>> = Arc::new(Arcs::new());
         assert_eq!(bag.len(), 0);
         assert!(bag.is_empty());
 
