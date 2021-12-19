@@ -10,6 +10,9 @@ repository = "https://github.com/NobodyXu/concurrency_toolkit"
 keywords = ["concurrency", "arena", "shared", "slotmap"]
 categories = ["concurrency"]
 
+[features]
+thread-sanitizer = []
+
 [dependencies]
 const_fn_assert = "0.1.2"
 
