@@ -90,10 +90,8 @@ impl<T: Clone> Arcs<T> {
 
         impl<T: Clone, F: FnMut() -> T> ExactSizeIterator for Initializer<'_, T, F> {}
 
-        let arc = ThinArc::from_header_and_iter(
-            (),
-            Initializer(slice.deref_or_empty().iter(), new_len - old_len, f),
-        );
+        let arc =
+            ThinArc::from_header_and_iter((), Initializer(slice.iter(), new_len - old_len, f));
 
         let _old = self.array.swap(Some(arc));
         debug_assert!(slice.is_same_arc(_old.as_ref()));
@@ -125,32 +123,23 @@ impl<T> Slice<'_, T> {
 
         this.heap_ptr() == other.heap_ptr()
     }
+}
 
-    pub(crate) fn deref(&self) -> Option<&[T]> {
+impl<T> Deref for Slice<'_, T> {
+    type Target = [T];
+
+    fn deref(&self) -> &Self::Target {
         self.0
             .as_ref()
             .map(ThinArc::deref)
             .map(|header_slice| &header_slice.slice)
-    }
-
-    pub(crate) fn deref_or_empty(&self) -> &[T] {
-        self.deref().unwrap_or(&[])
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.deref().map(|slice| slice.len()).unwrap_or(0)
-    }
-
-    pub(crate) fn is_empty(&self) -> bool {
-        self.len() == 0
+            .unwrap_or(&[])
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::Arcs;
-
-    use core::ptr;
 
     use parking_lot::Mutex;
     use std::sync::Arc;
@@ -176,18 +165,16 @@ mod tests {
 
         {
             let slice = bag.as_slice();
-            assert!(slice.deref().is_none());
             assert!(slice.is_empty());
-            assert_eq!(slice.deref_or_empty().len(), 0);
+            assert_eq!(slice.len(), 0);
         }
 
         bag.grow(10, Arc::default);
         {
             let slice = bag.as_slice();
             assert!(!slice.is_empty());
-            assert!(ptr::eq(slice.deref().unwrap(), slice.deref_or_empty()));
 
-            for (i, arc) in slice.deref_or_empty().iter().enumerate() {
+            for (i, arc) in slice.iter().enumerate() {
                 *arc.lock() = i as u32;
             }
         }
@@ -200,9 +187,8 @@ mod tests {
         {
             let slice = bag.as_slice();
             assert!(!slice.is_empty());
-            assert!(ptr::eq(slice.deref().unwrap(), slice.deref_or_empty()));
 
-            for (i, arc) in slice.deref_or_empty().iter().take(10).enumerate() {
+            for (i, arc) in slice.iter().take(10).enumerate() {
                 *arc.lock() = i as u32;
             }
         }
