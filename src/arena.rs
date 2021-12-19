@@ -132,6 +132,14 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
             .is_ok()
     }
 
+    /// Reserve `min(new_len, Self::max_buckets())` buckets.
+    pub fn reserve(&self, new_len: u32) {
+        if new_len != 0 {
+            let new_len = min(new_len, Self::max_buckets());
+            self.buckets.grow(new_len as usize, Arc::default)
+        }
+    }
+
     /// Insert one value.
     ///
     /// If there isn't enough buckets, then try to reserve one bucket and
