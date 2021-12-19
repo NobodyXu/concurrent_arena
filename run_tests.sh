@@ -25,6 +25,4 @@ for _ in $rep; do
 done
 
 export MIRIFLAGS="-Zmiri-disable-isolation"
-for _ in $rep; do
-    cargo +nightly miri test -- --nocapture
-done
+exec cargo +nightly miri test -- --nocapture
