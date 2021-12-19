@@ -177,7 +177,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
                     // If len == Self::max_buckets(), then we would have to
                     // wait for slots to be removed from `Arena`.
                     if len != Self::max_buckets() {
-                        self.reserve(len + 4);
+                        self.reserve(len + 8);
                     }
                 }
             }
