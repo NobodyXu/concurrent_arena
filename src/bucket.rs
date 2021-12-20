@@ -1,11 +1,11 @@
 use super::bitmap::BitMap;
+use super::Arc;
 
 use core::cell::UnsafeCell;
 use core::hint::spin_loop;
 use core::ops::Deref;
 
 use std::sync::atomic::{fence, AtomicU8, Ordering};
-use std::sync::Arc;
 
 use array_init::array_init;
 
@@ -56,6 +56,14 @@ unsafe impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Sync
 unsafe impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Send
     for Bucket<T, BITARRAY_LEN, LEN>
 {
+}
+
+impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Default
+    for Bucket<T, BITARRAY_LEN, LEN>
+{
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITARRAY_LEN, LEN> {
@@ -337,11 +345,11 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Drop
 
 #[cfg(test)]
 mod tests {
+    use super::Arc;
     use super::ArenaArc;
 
     use parking_lot::Mutex;
     use parking_lot::MutexGuard;
-    use std::sync::Arc;
 
     use std::thread::sleep;
     use std::thread::spawn;

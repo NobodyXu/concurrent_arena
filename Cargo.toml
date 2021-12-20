@@ -10,6 +10,9 @@ repository = "https://github.com/NobodyXu/concurrency_toolkit"
 keywords = ["concurrency", "arena", "shared", "slotmap"]
 categories = ["concurrency"]
 
+[features]
+thread-sanitizer = []
+
 [dependencies]
 const_fn_assert = "0.1.2"
 
@@ -17,6 +20,9 @@ array-init = "2.0.0"
 arrayvec = "0.7.2"
 
 parking_lot = "0.11.2"
+
+triomphe = { version = "0.1.4", features = ["arc-swap"] }
+arc-swap = "1.5.0"
 
 [dev-dependencies]
 bitvec = "0.20"
