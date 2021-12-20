@@ -66,14 +66,6 @@ impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN>
 
         u32::MAX / (LEN as u32)
     }
-
-    pub fn const_new() -> Self {
-        check_const_generics::<BITARRAY_LEN, LEN>();
-
-        Self {
-            buckets: Arcs::new(),
-        }
-    }
 }
 
 impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
@@ -231,13 +223,6 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
 #[cfg(test)]
 mod tests {
     use crate::*;
-
-    #[test]
-    fn test_const_new() {
-        let arena: Arena<_, 1, 64> = Arena::const_new();
-        let slot = ArenaArc::slot(&arena.insert(()));
-        assert_eq!(ArenaArc::slot(&arena.remove(slot).unwrap()), slot);
-    }
 
     #[test]
     fn test_new() {
