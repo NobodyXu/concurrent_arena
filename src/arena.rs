@@ -30,6 +30,13 @@ use const_fn_assert::{cfn_assert, cfn_assert_eq, cfn_assert_ne};
 /// `Arena` internally stores the array of buckets as a `triomphe::ThinArc`
 /// and use `ArcSwapAny` to grow the array atomically, without blocking any
 /// reader.
+///
+/// # Examples
+///
+/// ```rust,compile_fail
+/// use concurrent_arena::*;
+/// let arena = Arena::<u32, 1, 100>::new();
+/// ```
 pub struct Arena<T, const BITARRAY_LEN: usize, const LEN: usize> {
     buckets: Arcs<Arc<Bucket<T, BITARRAY_LEN, LEN>>>,
 }
