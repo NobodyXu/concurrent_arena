@@ -33,9 +33,20 @@ use const_fn_assert::{cfn_assert, cfn_assert_eq, cfn_assert_ne};
 ///
 /// # Examples
 ///
+/// If you provides `Arena` with invalid `LEM` or `BITARRAY_LEN`, then your
+/// code will panic at runtime:
+///
 /// ```rust,should_panic
 /// use concurrent_arena::*;
 /// let arena = Arena::<u32, 1, 100>::new();
+/// ```
+///
+/// To make it a compile time failure, you need to call
+/// `max_buckets`:
+///
+/// ```rust,compile_fail
+/// use concurrent_arena::*;
+/// const MAX_BUCKETS: u32 = Arena::<u32, 1, 100>::max_buckets();
 /// ```
 pub struct Arena<T, const BITARRAY_LEN: usize, const LEN: usize> {
     buckets: Arcs<Arc<Bucket<T, BITARRAY_LEN, LEN>>>,
