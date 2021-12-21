@@ -11,11 +11,13 @@ for _ in $rep; do
 done
 
 export RUSTFLAGS='-Zsanitizer=address'
+export RUSTDOCFLAGS="$RUSTFLAGS"
 for _ in $rep; do
     cargo +nightly test -- --nocapture
 done
 
 export RUSTFLAGS='-Zsanitizer=thread' 
+export RUSTDOCFLAGS="$RUSTFLAGS"
 for _ in $rep; do
     cargo +nightly test \
         -Z build-std \
