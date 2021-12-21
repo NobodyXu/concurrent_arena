@@ -235,6 +235,13 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BI
         cnt
     }
 
+    pub fn is_removed(this: &Self) -> bool {
+        let counter = &Self::get_entry(this).counter;
+        let refcnt = counter.load(Ordering::Relaxed);
+
+        (refcnt & REMOVED_MASK) != 0
+    }
+
     /// Remove this element.
     ///
     /// Return true if succeeds, false if it is already removed.
@@ -454,8 +461,10 @@ mod tests {
 
         for arc in arcs.drain(arcs.len() / 2..) {
             assert_eq!(ArenaArc::strong_count(&arc), 2);
-            let new_arc = Bucket::remove(bucket.clone(), 0, arc.index);
+            let new_arc = Bucket::remove(bucket.clone(), 0, arc.index).unwrap();
             assert_eq!(ArenaArc::strong_count(&arc), 2);
+
+            assert!(ArenaArc::is_removed(&new_arc));
 
             drop(new_arc);
             assert_eq!(ArenaArc::strong_count(&arc), 1);
@@ -511,6 +520,7 @@ mod tests {
         for arc in arcs.drain(arcs.len() / 2..) {
             assert_eq!(ArenaArc::strong_count(&arc), 2);
             ArenaArc::remove(&arc);
+            assert!(ArenaArc::is_removed(&arc));
             assert_eq!(ArenaArc::strong_count(&arc), 1);
         }
 
@@ -563,7 +573,8 @@ mod tests {
 
         arcs.into_par_iter().for_each(|arc| {
             assert_eq!(ArenaArc::strong_count(&arc), 2);
-            let new_arc = Bucket::remove(bucket.clone(), 0, arc.index);
+            let new_arc = Bucket::remove(bucket.clone(), 0, arc.index).unwrap();
+            assert!(ArenaArc::is_removed(&new_arc));
             assert_eq!(ArenaArc::strong_count(&arc), 2);
 
             drop(new_arc);
@@ -590,6 +601,7 @@ mod tests {
         arcs.into_par_iter().for_each(|arc| {
             assert_eq!(ArenaArc::strong_count(&arc), 2);
             ArenaArc::remove(&arc);
+            assert!(ArenaArc::is_removed(&arc));
             assert_eq!(ArenaArc::strong_count(&arc), 1);
         });
     }
