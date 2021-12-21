@@ -33,7 +33,7 @@ use const_fn_assert::{cfn_assert, cfn_assert_eq, cfn_assert_ne};
 ///
 /// # Examples
 ///
-/// ```rust,compile_fail
+/// ```rust,should_panic
 /// use concurrent_arena::*;
 /// let arena = Arena::<u32, 1, 100>::new();
 /// ```
