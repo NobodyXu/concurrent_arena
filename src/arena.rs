@@ -48,6 +48,7 @@ use const_fn_assert::{cfn_assert, cfn_assert_eq, cfn_assert_ne};
 /// use concurrent_arena::*;
 /// const MAX_BUCKETS: u32 = Arena::<u32, 1, 100>::max_buckets();
 /// ```
+#[derive(Debug)]
 pub struct Arena<T, const BITARRAY_LEN: usize, const LEN: usize> {
     buckets: Arcs<Arc<Bucket<T, BITARRAY_LEN, LEN>>>,
 }
