@@ -29,7 +29,13 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
     }
 
     pub(crate) fn allocate(&self) -> Option<usize> {
-        let mut pos = get_thread_id() % BITARRAY_LEN;
+        let bits = usize::BITS as usize;
+
+        let mut pos = if BITARRAY_LEN == bits {
+            0
+        } else {
+            get_thread_id() % BITARRAY_LEN
+        };
 
         let slice1_iter = self.0[pos..].iter();
         let slice2_iter = self.0[..pos].iter();
@@ -41,8 +47,6 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
                 if value == usize::MAX {
                     break;
                 }
-
-                let bits = usize::BITS as usize;
 
                 for i in 0..bits {
                     let mask = 1 << i;
