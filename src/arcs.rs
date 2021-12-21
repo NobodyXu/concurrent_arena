@@ -10,6 +10,7 @@ use parking_lot::Mutex;
 
 use triomphe::ThinArc;
 
+#[derive(Debug)]
 pub(crate) struct Arcs<T> {
     array: ArcSwapAny<Option<ThinArc<(), T>>>,
     mutex: Mutex<()>,
