@@ -12,3 +12,9 @@ Concurrent arena that
  - Support concurrent inserted and removed;
  - Use a `u32` as key;
  - Returns `ArenaArc` to track the inserted object to avoid lifetime issues.
+
+## How to run tests
+
+```
+./run_tests.sh
+```
