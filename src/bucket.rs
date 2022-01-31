@@ -213,6 +213,11 @@ pub struct ArenaArc<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize>
     bucket: Arc<Bucket<T, BITARRAY_LEN, LEN>>,
 }
 
+impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Unpin
+    for ArenaArc<T, BITARRAY_LEN, LEN>
+{
+}
+
 impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BITARRAY_LEN, LEN> {
     pub fn slot(this: &Self) -> u32 {
         this.slot
