@@ -17,7 +17,7 @@ thread-sanitizer = []
 const_fn_assert = "0.1.2"
 array-init = "2.0.0"
 
-parking_lot = "0.11.2"
+parking_lot = "0.12.0"
 
 triomphe = { version = "0.1.5", features = ["arc-swap"] }
 arc-swap = "1.5.0"
