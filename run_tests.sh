@@ -18,10 +18,12 @@ done
 
 export RUSTFLAGS='-Zsanitizer=thread' 
 export RUSTDOCFLAGS="$RUSTFLAGS"
+
+target=$(rustc -vV | grep host | cut -d : -f 2)
 for _ in $rep; do
     cargo +nightly test $@ \
         -Z build-std \
-        --target $(uname -m)-unknown-linux-gnu \
+        --target $target \
         --features thread-sanitizer \
         -- --nocapture
 done
