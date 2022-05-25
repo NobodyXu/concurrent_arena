@@ -56,7 +56,7 @@ jobs:
     - name: Run clippy
       run: cargo clippy --all --all-features
 
-  tests:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -69,17 +69,11 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-test-with-rust-src-${{ hashFiles('**/Cargo.lock') }}-v2
-    - name: Install latest nightly
-      uses: actions-rs/toolchain@v1
-      with:
-          toolchain: nightly
-          override: true
-          components: rust-src, miri
+        key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-test-v3
     - name: Run tests
-      run: ./run_tests.sh
+      run: cargo test
 
-  tests_release:
+  test-release:
     runs-on: ubuntu-latest
 
     steps:
@@ -92,12 +86,55 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-test-release-with-rust-src-${{ hashFiles('**/Cargo.lock') }}-v2
+        key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-test-release-v3
+    - name: Run tests
+      run: cargo test --release
+
+  test-sanitize-address:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-test-sanitize-address-v3
     - name: Install latest nightly
       uses: actions-rs/toolchain@v1
       with:
           toolchain: nightly
-          override: true
-          components: rust-src, miri
     - name: Run tests
-      run: ./run_tests.sh --release
+      run: cargo +nightly test
+      env:
+        RUSTFLAGS: -Zsanitizer=address
+        RUSTDOCFLAGS: -Zsanitizer=address
+
+  test-sanitize-thread:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-test-sanitize-thread-v3
+    - name: Install latest nightly
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: nightly
+          components: rust-src
+    - name: Run tests
+      run: cargo +nightly test
+      env:
+        RUSTFLAGS: -Zsanitizer=thread
+        RUSTDOCFLAGS: -Zsanitizer=thread
