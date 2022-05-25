@@ -21,7 +21,7 @@ export RUSTDOCFLAGS="$RUSTFLAGS"
 for _ in $rep; do
     cargo +nightly test $@ \
         -Z build-std \
-        --target --target $(uname -m)-unknown-linux-gnu \
+        --target $(uname -m)-unknown-linux-gnu \
         --features thread-sanitizer \
         -- --nocapture
 done
