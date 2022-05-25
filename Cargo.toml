@@ -5,7 +5,7 @@ edition = "2018"
 
 license = "MIT"
 description = "u32 concurrent insertion/removal arena that returns ArenaArc"
-repository = "https://github.com/NobodyXu/concurrency_toolkit"
+repository = "https://github.com/NobodyXu/concurrent_arena"
 
 keywords = ["concurrency", "arena", "shared", "slotmap"]
 categories = ["concurrency"]
