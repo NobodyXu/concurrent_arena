@@ -78,3 +78,26 @@ jobs:
           components: rust-src, miri
     - name: Run tests
       run: ./run_tests.sh
+
+  tests_release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-test-with-rust-src-${{ hashFiles('**/Cargo.lock') }}-v2
+    - name: Install latest nightly
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: nightly
+          override: true
+          components: rust-src, miri
+    - name: Run tests
+      run: ./run_tests.sh --release
