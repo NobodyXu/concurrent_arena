@@ -1,6 +1,8 @@
-#!/bin/bash -ex
+#!/bin/bash
 
-cd $(dirname `realpath $0`)
+set -euxo pipefail
+
+cd "$(dirname "$(realpath "$0")")"
 
 export RUST_TEST_THREADS=1
 
