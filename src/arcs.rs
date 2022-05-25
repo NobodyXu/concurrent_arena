@@ -97,6 +97,8 @@ impl<T: Clone> Arcs<T> {
             ThinArc::from_header_and_iter((), Initializer(slice.iter(), new_len - old_len, f));
 
         let _old = self.array.swap(Some(arc));
+
+        #[cfg(debug_assertions)]
         debug_assert!(slice.is_same_arc(_old.as_ref()));
     }
 }
