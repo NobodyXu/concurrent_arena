@@ -134,7 +134,11 @@ jobs:
           toolchain: nightly
           components: rust-src
     - name: Run tests
-      run: cargo +nightly test
+      run: |
+        cargo +nightly test ]
+                -Z build-std
+                --target $(rustc -vV | grep host | cut -d : -f 2) \
+                --features thread-sanitizer \
       env:
         RUSTFLAGS: -Zsanitizer=thread
         RUSTDOCFLAGS: -Zsanitizer=thread
