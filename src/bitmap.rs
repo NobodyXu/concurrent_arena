@@ -121,7 +121,7 @@ mod tests {
     fn test() {
         let bits = usize::BITS as usize;
 
-        let mut bitvec = BitVec::<Lsb0, usize>::with_capacity(LEN * bits);
+        let mut bitvec = BitVec::<usize, Lsb0>::with_capacity(LEN * bits);
         bitvec.resize(LEN * bits, false);
 
         assert_eq!(bitvec.len(), LEN * bits);
@@ -167,7 +167,7 @@ mod tests {
     fn realworld_test() {
         let bits = usize::BITS as usize;
 
-        let mut bitvec = BitVec::<Lsb0, usize>::with_capacity(LEN * bits);
+        let mut bitvec = BitVec::<usize, Lsb0>::with_capacity(LEN * bits);
         bitvec.resize(LEN * bits, false);
 
         assert_eq!(bitvec.len(), LEN * bits);
@@ -178,21 +178,20 @@ mod tests {
             Mutex::new(bitvec.into_boxed_bitslice()),
         ));
 
-        let arc_cloned = arc.clone();
         (0..(LEN * bits * 2)).into_par_iter().for_each(|_| {
             let index = loop {
-                match arc_cloned.0.allocate() {
+                match arc.0.allocate() {
                     Some(index) => break index,
                     None => (),
                 }
             };
-            assert!(arc_cloned.0.load(index as u32));
-            assert!(!arc_cloned.1.lock().get_mut(index).unwrap().replace(true));
+            assert!(arc.0.load(index as u32));
+            assert!(!arc.1.lock().get_mut(index).unwrap().replace(true));
 
             sleep(Duration::from_micros(1));
 
-            let mut guard = arc_cloned.1.lock();
-            arc_cloned.0.deallocate(index);
+            let mut guard = arc.1.lock();
+            arc.0.deallocate(index);
             assert!(guard.get_mut(index).unwrap().replace(false));
         });
     }
