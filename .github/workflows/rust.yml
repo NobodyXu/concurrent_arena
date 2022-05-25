@@ -55,7 +55,8 @@ jobs:
         key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}-v2
     - name: Run clippy
       run: cargo clippy --all --all-features
-  build:
+
+  tests:
     runs-on: ubuntu-latest
 
     steps:
