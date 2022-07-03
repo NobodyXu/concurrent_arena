@@ -5,7 +5,7 @@ env:
 
 on:
   push:
-    branches: [main]
+    branches: [none]
     paths-ignore:
       - 'README.md'
       - 'LICENSE'
