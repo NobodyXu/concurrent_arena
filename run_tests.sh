@@ -30,5 +30,5 @@ for _ in $rep; do
         -- --nocapture
 done
 
-#export MIRIFLAGS="-Zmiri-disable-isolation"
-#exec cargo +nightly miri test -- --nocapture
+export MIRIFLAGS="-Zmiri-disable-isolation"
+exec cargo +nightly miri test -- --nocapture
