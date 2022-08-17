@@ -101,13 +101,10 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
         //
         // Set counter after option is set to `Some(...)` to avoid
         // race condition with `remove`.
-        #[cfg(debug_assertions)]
-        {
+        if cfg!(debug_assertions) {
             let prev_refcnt = entry.counter.swap(2, Ordering::Relaxed);
             assert_eq!(prev_refcnt, 0);
-        }
-        #[cfg(not(debug_assertions))]
-        {
+        } else {
             entry.counter.store(2, Ordering::Relaxed);
         }
 
