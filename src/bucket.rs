@@ -28,16 +28,21 @@ impl<T> Entry<T> {
     }
 }
 
-#[cfg(debug_assertions)]
 impl<T> Drop for Entry<T> {
     fn drop(&mut self) {
-        let counter = *self.counter.get_mut();
+        // Use `Acquire` here to make sure option is set to None before
+        // the entry is dropped.
+        let _cnt = self.counter.load(Ordering::Acquire);
 
-        // It must be either deleted, or is still alive
-        // but no `ArenaArc` reference exist.
-        assert!(counter <= 1);
-        if counter == 0 {
-            assert!(self.val.get_mut().is_none());
+        if cfg!(debug_assertions) {
+            let counter = _cnt;
+
+            // It must be either deleted, or is still alive
+            // but no `ArenaArc` reference exist.
+            assert!(counter <= 1);
+            if counter == 0 {
+                assert!(self.val.get_mut().is_none());
+            }
         }
     }
 }
