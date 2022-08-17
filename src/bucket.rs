@@ -33,11 +33,12 @@ impl<T> Drop for Entry<T> {
         // It must be either deleted, or is still alive
         // but no `ArenaArc` reference exist.
         debug_assert!(cnt <= 1);
+
+        let val = self.val.get_mut().take();
+
         if cnt == 0 {
-            debug_assert!(self.val.get_mut().is_none());
+            debug_assert!(val.is_none());
         } else {
-            // Drop the inner value
-            let val = self.val.get_mut().take();
             debug_assert!(val.is_some());
         }
     }
