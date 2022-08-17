@@ -197,7 +197,11 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
 }
 
 type AccessOp<T, const BITARRAY_LEN: usize, const LEN: usize> =
-    fn(Arc<Bucket<T, BITARRAY_LEN, LEN>>, u32, u32) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>>;
+    unsafe fn(
+        Arc<Bucket<T, BITARRAY_LEN, LEN>>,
+        u32,
+        u32,
+    ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>>;
 
 impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
     fn access_impl(
@@ -212,7 +216,8 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
             .as_slice()
             .get(bucket_index as usize)
             .cloned()
-            .and_then(|bucket| op(bucket, bucket_index, index))
+            // Safety: index is <= LEN
+            .and_then(|bucket| unsafe { op(bucket, bucket_index, index) })
     }
 
     /// May enter busy loop if the slot is not fully initialized.

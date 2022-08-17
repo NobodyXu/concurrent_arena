@@ -120,13 +120,19 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
         })
     }
 
-    pub(crate) fn get(
+    /// # Safety
+    ///
+    /// `index` <= `LEN`
+    pub(crate) unsafe fn get(
         this: Arc<Self>,
         bucket_index: u32,
         index: u32,
     ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
         if this.bitset.load(index) {
-            let counter = &unsafe { this.entries.get_unchecked_on_release(index as usize) }.counter;
+            let counter = &this
+                .entries
+                .get_unchecked_on_release(index as usize)
+                .counter;
             let mut refcnt = counter.load(Ordering::Relaxed);
 
             loop {
@@ -163,13 +169,19 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
         }
     }
 
-    pub(crate) fn remove(
+    /// # Safety
+    ///
+    /// `index` <= `LEN`
+    pub(crate) unsafe fn remove(
         this: Arc<Self>,
         bucket_index: u32,
         index: u32,
     ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
         if this.bitset.load(index) {
-            let counter = &unsafe { this.entries.get_unchecked_on_release(index as usize) }.counter;
+            let counter = &this
+                .entries
+                .get_unchecked_on_release(index as usize)
+                .counter;
             let mut refcnt = counter.load(Ordering::Relaxed);
 
             loop {
@@ -403,7 +415,7 @@ mod tests {
             .into_par_iter()
             .enumerate()
             .map(|(i, orig_arc)| {
-                let arc = Bucket::get(Arc::clone(&bucket), 0, orig_arc.index).unwrap();
+                let arc = unsafe { Bucket::get(Arc::clone(&bucket), 0, orig_arc.index) }.unwrap();
 
                 assert_eq!(ArenaArc::strong_count(&arc), 3);
                 assert_eq!(*arc as usize, i);
@@ -472,7 +484,7 @@ mod tests {
 
         for arc in arcs.drain(arcs.len() / 2..) {
             assert_eq!(ArenaArc::strong_count(&arc), 2);
-            let new_arc = Bucket::remove(bucket.clone(), 0, arc.index).unwrap();
+            let new_arc = unsafe { Bucket::remove(bucket.clone(), 0, arc.index) }.unwrap();
             assert_eq!(ArenaArc::strong_count(&arc), 2);
 
             assert!(ArenaArc::is_removed(&new_arc));
@@ -584,7 +596,7 @@ mod tests {
 
         arcs.into_par_iter().for_each(|arc| {
             assert_eq!(ArenaArc::strong_count(&arc), 2);
-            let new_arc = Bucket::remove(bucket.clone(), 0, arc.index).unwrap();
+            let new_arc = unsafe { Bucket::remove(bucket.clone(), 0, arc.index) }.unwrap();
             assert!(ArenaArc::is_removed(&new_arc));
             assert_eq!(ArenaArc::strong_count(&arc), 2);
 
