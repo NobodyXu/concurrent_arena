@@ -290,7 +290,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Deref
     fn deref(&self) -> &Self::Target {
         let ptr = Self::get_entry(self).val.get();
 
-        unsafe { &*ptr }.as_ref().unwrap()
+        unsafe { (*ptr).as_ref().unwrap_unchecked_on_release() }
     }
 }
 
