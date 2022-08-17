@@ -1,10 +1,6 @@
-use super::bitmap::BitMap;
-use super::Arc;
+use super::{bitmap::BitMap, Arc, OptionExt};
 
-use core::cell::UnsafeCell;
-use core::hint::spin_loop;
-use core::ops::Deref;
-
+use core::{cell::UnsafeCell, hint::spin_loop, ops::Deref};
 use std::sync::atomic::{fence, AtomicU8, Ordering};
 
 use array_init::array_init;
@@ -41,7 +37,8 @@ impl<T> Drop for Entry<T> {
             debug_assert!(self.val.get_mut().is_none());
         } else {
             // Drop the inner value
-            self.val.get_mut().take();
+            let val = self.val.get_mut().take();
+            debug_assert!(val.is_some());
         }
     }
 }
