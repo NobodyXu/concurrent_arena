@@ -216,9 +216,11 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
         let bucket_index = slot / (LEN as u32);
         let index = slot % (LEN as u32);
 
-        let bucket = self.buckets.as_slice()[bucket_index as usize].clone();
-
-        Bucket::get(bucket, bucket_index, index)
+        self.buckets
+            .as_slice()
+            .get(bucket_index as usize)
+            .cloned()
+            .and_then(|bucket| Bucket::get(bucket, bucket_index, index))
     }
 
     /// Return number of buckets allocated.
