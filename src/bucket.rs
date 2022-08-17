@@ -365,7 +365,10 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Drop
             // the entry is reused again.
             entry.counter.store(0, Ordering::Release);
 
-            self.bucket.bitset.deallocate(Self::get_index(self));
+            // Safety:
+            //
+            // `Self::get_index(self)` <= `LEN` == `BITARRAY_LEN / usize::BITS`
+            unsafe { self.bucket.bitset.deallocate(Self::get_index(self)) };
         }
     }
 }

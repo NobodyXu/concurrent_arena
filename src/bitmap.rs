@@ -1,4 +1,4 @@
-use super::thread_id::get_thread_id;
+use super::{thread_id::get_thread_id, SliceExt};
 
 use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
 
@@ -19,12 +19,15 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
         Self(array_init(|_| AtomicUsize::new(0)))
     }
 
-    pub(crate) fn load(&self, index: u32) -> bool {
+    /// # Safety
+    ///
+    /// `index` <= `BITARRAY_LEN / usize::BITS`
+    pub(crate) unsafe fn load(&self, index: u32) -> bool {
         let bits = usize::BITS;
         let mask = 1 << (index % bits);
         let offset = (index / bits) as usize;
 
-        (self.0[offset].load(Relaxed) & mask) != 0
+        (self.0.get_unchecked_on_release(offset).load(Relaxed) & mask) != 0
     }
 
     pub(crate) fn allocate(&self) -> Option<usize> {
@@ -72,10 +75,13 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
         None
     }
 
-    pub(crate) fn deallocate(&self, index: usize) {
+    /// # Safety
+    ///
+    /// `index` <= `BITARRAY_LEN / usize::BITS`
+    pub(crate) unsafe fn deallocate(&self, index: usize) {
         let bits = usize::BITS as usize;
 
-        let chunk = &self.0[index / bits];
+        let chunk = self.0.get_unchecked_on_release(index / bits);
         let mask = !(1 << (index % bits));
 
         let mut value = chunk.load(Relaxed);
@@ -137,7 +143,7 @@ mod tests {
         (0..(LEN * bits)).into_par_iter().for_each(|_| {
             let index = arc_cloned.0.allocate().unwrap();
             assert!(index <= max_index);
-            assert!(arc_cloned.0.load(index as u32));
+            assert!(unsafe { arc_cloned.0.load(index as u32) });
             assert!(!arc_cloned.1.lock().get_mut(index).unwrap().replace(true));
         });
 
@@ -151,14 +157,14 @@ mod tests {
         assert!(bitmap.allocate().is_none());
 
         for i in 0..(LEN * bits) {
-            assert!(bitmap.load(i as u32));
-            bitmap.deallocate(i);
+            assert!(unsafe { bitmap.load(i as u32) });
+            unsafe { bitmap.deallocate(i) };
 
-            assert!(!bitmap.load(i as u32));
+            assert!(!unsafe { bitmap.load(i as u32) });
 
             let index = bitmap.allocate().unwrap();
             assert_eq!(index, i);
-            assert!(bitmap.load(i as u32));
+            assert!(unsafe { bitmap.load(i as u32) });
         }
     }
 
@@ -184,13 +190,13 @@ mod tests {
                     None => (),
                 }
             };
-            assert!(arc.0.load(index as u32));
+            assert!(unsafe { arc.0.load(index as u32) });
             assert!(!arc.1.lock().get_mut(index).unwrap().replace(true));
 
             sleep(Duration::from_micros(1));
 
             let mut guard = arc.1.lock();
-            arc.0.deallocate(index);
+            unsafe { arc.0.deallocate(index) };
             assert!(guard.get_mut(index).unwrap().replace(false));
         });
     }
