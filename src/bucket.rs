@@ -122,10 +122,11 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
     /// # Safety
     ///
     /// `index` <= `LEN`
-    pub(crate) unsafe fn get(
+    unsafe fn access_impl(
         this: Arc<Self>,
         bucket_index: u32,
         index: u32,
+        update_refcnt: fn(u8) -> u8,
     ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
         if this.bitset.load(index) {
             let counter = &this
@@ -149,7 +150,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
 
                 match counter.compare_exchange_weak(
                     refcnt,
-                    refcnt + 1,
+                    update_refcnt(refcnt),
                     Ordering::Relaxed,
                     Ordering::Relaxed,
                 ) {
@@ -171,50 +172,23 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
     /// # Safety
     ///
     /// `index` <= `LEN`
+    pub(crate) unsafe fn get(
+        this: Arc<Self>,
+        bucket_index: u32,
+        index: u32,
+    ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
+        Self::access_impl(this, bucket_index, index, |refcnt| refcnt + 1)
+    }
+
+    /// # Safety
+    ///
+    /// `index` <= `LEN`
     pub(crate) unsafe fn remove(
         this: Arc<Self>,
         bucket_index: u32,
         index: u32,
     ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
-        if this.bitset.load(index) {
-            let counter = &this
-                .entries
-                .get_unchecked_on_release(index as usize)
-                .counter;
-            let mut refcnt = counter.load(Ordering::Relaxed);
-
-            loop {
-                if (refcnt & REMOVED_MASK) != 0 {
-                    return None;
-                }
-
-                if refcnt == 0 {
-                    // The variable is not yet fully initialized.
-                    // Reload the refcnt and check again.
-                    spin_loop();
-                    refcnt = counter.load(Ordering::Relaxed);
-                    continue;
-                }
-
-                match counter.compare_exchange_weak(
-                    refcnt,
-                    refcnt | REMOVED_MASK,
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(_) => break,
-                    Err(new_refcnt) => refcnt = new_refcnt,
-                }
-            }
-
-            Some(ArenaArc {
-                slot: bucket_index * (LEN as u32) + index,
-                index,
-                bucket: this,
-            })
-        } else {
-            None
-        }
+        Self::access_impl(this, bucket_index, index, |refcnt| refcnt | REMOVED_MASK)
     }
 }
 
