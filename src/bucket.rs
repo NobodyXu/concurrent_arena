@@ -86,6 +86,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
             None => return Err(value),
         };
 
+        // Safety: index <= LEN
         let entry = unsafe { this.entries.get_unchecked_on_release(index) };
 
         // Use `Acquire` here to make sure option is set to None before
@@ -94,6 +95,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
         debug_assert_eq!(prev_refcnt, 0);
 
         let ptr = entry.val.get();
+        // Safety: ptr can only accessed by this thread
         let res = unsafe { ptr.replace(Some(value)) };
         debug_assert!(res.is_none());
 
@@ -239,6 +241,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BI
     }
 
     fn get_entry(this: &Self) -> &Entry<T> {
+        // Safety: `Self::get_index(this)` <= `LEN`
         let entry = unsafe {
             this.bucket
                 .entries
@@ -304,6 +307,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Deref
     fn deref(&self) -> &Self::Target {
         let ptr = Self::get_entry(self).val.get();
 
+        // Safety: `Self::get_index(this)` <= `LEN`
         unsafe { (*ptr).as_ref().unwrap_unchecked_on_release() }
     }
 }
@@ -358,6 +362,8 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Drop
             fence(Ordering::Acquire);
 
             // Now entry.counter == 0
+
+            // Safety: `entry.val` can only be accessed by this thread now.
             let option = unsafe { &mut *entry.val.get() };
             *option = None;
 
