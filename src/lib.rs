@@ -5,7 +5,7 @@ mod bucket;
 mod thread_id;
 
 mod utility;
-use utility::OptionExt;
+use utility::{OptionExt, SliceExt};
 
 pub use arena::Arena;
 pub use bucket::{ArenaArc, MAX_REFCNT};
