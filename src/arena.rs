@@ -194,11 +194,17 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
             }
         }
     }
+}
 
-    /// May enter busy loop if the slot is not fully initialized.
-    ///
-    /// This function is lock free.
-    pub fn remove(&self, slot: u32) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
+type AccessOp<T, const BITARRAY_LEN: usize, const LEN: usize> =
+    fn(Arc<Bucket<T, BITARRAY_LEN, LEN>>, u32, u32) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>>;
+
+impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
+    fn access_impl(
+        &self,
+        slot: u32,
+        op: AccessOp<T, BITARRAY_LEN, LEN>,
+    ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
         let bucket_index = slot / (LEN as u32);
         let index = slot % (LEN as u32);
 
@@ -206,21 +212,21 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
             .as_slice()
             .get(bucket_index as usize)
             .cloned()
-            .and_then(|bucket| Bucket::remove(bucket, bucket_index, index))
+            .and_then(|bucket| op(bucket, bucket_index, index))
+    }
+
+    /// May enter busy loop if the slot is not fully initialized.
+    ///
+    /// This function is lock free.
+    pub fn remove(&self, slot: u32) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
+        self.access_impl(slot, Bucket::remove)
     }
 
     /// May enter busy loop if the slot is not fully initialized.
     ///
     /// This function is lock free.
     pub fn get(&self, slot: u32) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
-        let bucket_index = slot / (LEN as u32);
-        let index = slot % (LEN as u32);
-
-        self.buckets
-            .as_slice()
-            .get(bucket_index as usize)
-            .cloned()
-            .and_then(|bucket| Bucket::get(bucket, bucket_index, index))
+        self.access_impl(slot, Bucket::get)
     }
 
     /// Return number of buckets allocated.
