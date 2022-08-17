@@ -1,4 +1,4 @@
-use super::{bitmap::BitMap, Arc, OptionExt};
+use super::{bitmap::BitMap, Arc, OptionExt, SliceExt};
 
 use core::{cell::UnsafeCell, hint::spin_loop, ops::Deref};
 use std::sync::atomic::{fence, AtomicU8, Ordering};
@@ -86,7 +86,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
             None => return Err(value),
         };
 
-        let entry = &this.entries[index];
+        let entry = unsafe { this.entries.get_unchecked_on_release(index) };
 
         // Use `Acquire` here to make sure option is set to None before
         // the entry is reused again.
@@ -126,7 +126,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
         index: u32,
     ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
         if this.bitset.load(index) {
-            let counter = &this.entries[index as usize].counter;
+            let counter = &unsafe { this.entries.get_unchecked_on_release(index as usize) }.counter;
             let mut refcnt = counter.load(Ordering::Relaxed);
 
             loop {
@@ -169,7 +169,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
         index: u32,
     ) -> Option<ArenaArc<T, BITARRAY_LEN, LEN>> {
         if this.bitset.load(index) {
-            let counter = &this.entries[index as usize].counter;
+            let counter = &unsafe { this.entries.get_unchecked_on_release(index as usize) }.counter;
             let mut refcnt = counter.load(Ordering::Relaxed);
 
             loop {
@@ -230,7 +230,11 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> ArenaArc<T, BI
     }
 
     fn get_entry(this: &Self) -> &Entry<T> {
-        let entry = &this.bucket.entries[Self::get_index(this)];
+        let entry = unsafe {
+            this.bucket
+                .entries
+                .get_unchecked_on_release(Self::get_index(this))
+        };
         debug_assert!((entry.counter.load(Ordering::Relaxed) & REFCNT_MASK) > 0);
         entry
     }
