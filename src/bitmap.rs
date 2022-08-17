@@ -1,7 +1,6 @@
 use super::thread_id::get_thread_id;
 
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering::Relaxed;
+use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
 
 use array_init::array_init;
 

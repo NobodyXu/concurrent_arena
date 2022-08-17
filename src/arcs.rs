@@ -1,11 +1,8 @@
 #![forbid(unsafe_code)]
 
-use core::marker::PhantomData;
-use core::ops::Deref;
-use core::slice::Iter;
+use core::{marker::PhantomData, ops::Deref, slice::Iter};
 
-use arc_swap::ArcSwapAny;
-use arc_swap::Guard;
+use arc_swap::{ArcSwapAny, Guard};
 use parking_lot::Mutex;
 
 use triomphe::ThinArc;

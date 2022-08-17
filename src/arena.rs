@@ -1,8 +1,4 @@
-use super::arcs::Arcs;
-use super::bucket::Bucket;
-use super::thread_id::get_thread_id;
-use super::Arc;
-use super::ArenaArc;
+use super::{arcs::Arcs, bucket::Bucket, thread_id::get_thread_id, Arc, ArenaArc};
 
 use core::cmp::min;
 
