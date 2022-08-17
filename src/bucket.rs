@@ -39,6 +39,9 @@ impl<T> Drop for Entry<T> {
         debug_assert!(cnt <= 1);
         if cnt == 0 {
             debug_assert!(self.val.get_mut().is_none());
+        } else {
+            // Drop the inner value
+            self.val.get_mut().take();
         }
     }
 }
