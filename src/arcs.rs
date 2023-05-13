@@ -68,8 +68,6 @@ impl<T: Clone> Arcs<T> {
             return;
         }
 
-        // How about using slice to create thinarc, which can avoid managing count in iterator?
-        // It can improve performance.
         struct Initializer<'a, T, F>(Iter<'a, T>, usize, F);
 
         impl<T: Clone, F: FnMut() -> T> Iterator for Initializer<'_, T, F> {
