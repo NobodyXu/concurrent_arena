@@ -36,7 +36,7 @@ impl<T> Arcs<T> {
 
 impl<T: Clone> Arcs<T> {
     pub(crate) fn grow(&self, new_len: usize, f: impl FnMut() -> T) {
-        if new_len != 0 || self.len() < new_len {
+        if self.len() < new_len {
             let _guard = self.mutex.lock();
             self.do_grow(new_len, f);
         }
@@ -45,7 +45,7 @@ impl<T: Clone> Arcs<T> {
     /// This function is technically lock-free despite the fact that `self.mutex` is
     /// used, since it only `try_lock` the mutex.
     pub(crate) fn try_grow(&self, new_len: usize, f: impl FnMut() -> T) -> Result<(), ()> {
-        if new_len != 0 || self.len() < new_len {
+        if self.len() < new_len {
             if let Some(_guard) = self.mutex.try_lock() {
                 self.do_grow(new_len, f);
                 Ok(())
@@ -59,8 +59,9 @@ impl<T: Clone> Arcs<T> {
 
     fn do_grow(&self, new_len: usize, f: impl FnMut() -> T) {
         let slice = self.as_slice();
+        let slice_ref = &*slice;
 
-        let old_len = slice.len();
+        let old_len = slice_ref.len();
         if old_len >= new_len {
             return;
         }
@@ -91,7 +92,7 @@ impl<T: Clone> Arcs<T> {
         impl<T: Clone, F: FnMut() -> T> ExactSizeIterator for Initializer<'_, T, F> {}
 
         let arc =
-            ThinArc::from_header_and_iter((), Initializer(slice.iter(), new_len - old_len, f));
+            ThinArc::from_header_and_iter((), Initializer(slice_ref.iter(), new_len - old_len, f));
 
         let _old = self.array.swap(Some(arc));
 
