@@ -36,6 +36,7 @@ impl<T> Arcs<T> {
 
 impl<T: Clone> Arcs<T> {
     pub(crate) fn grow(&self, new_len: usize, f: impl FnMut() -> T) {
+        // we can ignore `new_len == 0` case, since `self.len() < new_len` will be `false` in this case.
         if new_len != 0 || self.len() < new_len {
             let _guard = self.mutex.lock();
             self.do_grow(new_len, f);
@@ -45,6 +46,7 @@ impl<T: Clone> Arcs<T> {
     /// This function is technically lock-free despite the fact that `self.mutex` is
     /// used, since it only `try_lock` the mutex.
     pub(crate) fn try_grow(&self, new_len: usize, f: impl FnMut() -> T) -> Result<(), ()> {
+        // same as `grow`, we can ignore `new_len == 0` case.
         if new_len != 0 || self.len() < new_len {
             if let Some(_guard) = self.mutex.try_lock() {
                 self.do_grow(new_len, f);
@@ -58,6 +60,7 @@ impl<T: Clone> Arcs<T> {
     }
 
     fn do_grow(&self, new_len: usize, f: impl FnMut() -> T) {
+        // How about doing deref here? It can avoid multiple deref of S.
         let slice = self.as_slice();
 
         let old_len = slice.len();
@@ -65,6 +68,8 @@ impl<T: Clone> Arcs<T> {
             return;
         }
 
+        // How about using slice to create thinarc, which can avoid managing count in iterator?
+        // It can improve performance.
         struct Initializer<'a, T, F>(Iter<'a, T>, usize, F);
 
         impl<T: Clone, F: FnMut() -> T> Iterator for Initializer<'_, T, F> {

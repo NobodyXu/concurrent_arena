@@ -7,6 +7,7 @@ use const_fn_assert::{cfn_assert, cfn_assert_eq, cfn_assert_ne};
 /// * `LEN` - Number of elements stored per bucket.
 ///    Must be less than or equal to `u32::MAX`, divisible by
 ///   `usize::BITS` and it must not be `0`.
+// `BITARRAY_LEN` seems to be the number of usize in the bitmap per bucket.
 /// * `BITARRAY_LEN` - Number bits in the bitmap per bucket.
 ///   Must be equal to `LEN / usize::BITS`.
 ///
@@ -31,6 +32,10 @@ use const_fn_assert::{cfn_assert, cfn_assert_eq, cfn_assert_ne};
 ///
 /// If you provides `Arena` with invalid `LEM` or `BITARRAY_LEN`, then your
 /// code will panic at runtime:
+///
+// We can wait for the `generic_const_exprs` feature to stabilize to simplify const generics.
+// This is the example: `buckets: Arcs<Arc<Bucket<T, BITARRAY_LEN, {BITARRAY_LEN * usize::BITS}>>>`
+// If possible, we can open an issue to track it first.
 ///
 /// ```rust,should_panic
 /// use concurrent_arena::*;
@@ -60,6 +65,9 @@ impl<T: Sync + Send, const BITARRAY_LEN: usize, const LEN: usize> Default
 const fn check_const_generics<const BITARRAY_LEN: usize, const LEN: usize>() {
     let bits = usize::BITS as usize;
 
+    // Rust 1.57 supports `panic!` in const contexts. And utility.rs:12 `option_result_unwrap_unchecked`
+    // is a feature of Rust 1.58, which means the lib msrv is greater that 1.57. So we can replace the
+    // `const_fn_assert` with `panic!` in const contexts.
     cfn_assert!(LEN <= (u32::MAX as usize));
     cfn_assert_eq!(LEN % bits, 0);
     cfn_assert_ne!(LEN, 0);
@@ -99,6 +107,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
     ///
     /// This function is lock-free.
     pub fn try_insert(&self, mut value: T) -> Result<ArenaArc<T, BITARRAY_LEN, LEN>, (T, u32)> {
+        // How about doing deref here? It can avoid multiple deref of Slice.
         let slice = self.buckets.as_slice();
         let len = slice.len();
 
