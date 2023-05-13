@@ -2,6 +2,7 @@
 name = "concurrent_arena"
 version = "0.1.7"
 edition = "2018"
+rust-version = "1.58"
 
 license = "MIT"
 description = "u32 concurrent insertion/removal arena that returns ArenaArc"
@@ -14,11 +15,8 @@ categories = ["concurrency"]
 thread-sanitizer = []
 
 [dependencies]
-const_fn_assert = "0.1.2"
 array-init = "2.0.0"
-
 parking_lot = "0.12.0"
-
 triomphe = { version = "0.1.5", features = ["arc-swap"] }
 arc-swap = "1.5.0"
 

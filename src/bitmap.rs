@@ -84,25 +84,12 @@ impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
         let chunk = self.0.get_unchecked_on_release(index / bits);
         let mask = !(1 << (index % bits));
 
-        let mut value = chunk.load(Relaxed);
-
-        loop {
-            match compare_exchange(chunk, value, value & mask) {
-                Ok(_) => break,
-                Err(new_value) => value = new_value,
-            }
-        }
+        chunk.fetch_and(mask, Relaxed);
     }
 
     #[cfg(test)]
     pub(crate) fn is_all_one(&self) -> bool {
-        for each in self.0.iter() {
-            if each.load(Relaxed) != usize::MAX {
-                return false;
-            }
-        }
-
-        true
+        self.0.iter().all(|each| each.load(Relaxed) == usize::MAX)
     }
 }
 

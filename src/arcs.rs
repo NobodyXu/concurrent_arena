@@ -36,7 +36,7 @@ impl<T> Arcs<T> {
 
 impl<T: Clone> Arcs<T> {
     pub(crate) fn grow(&self, new_len: usize, f: impl FnMut() -> T) {
-        if new_len != 0 || self.len() < new_len {
+        if self.len() < new_len {
             let _guard = self.mutex.lock();
             self.do_grow(new_len, f);
         }
@@ -45,7 +45,7 @@ impl<T: Clone> Arcs<T> {
     /// This function is technically lock-free despite the fact that `self.mutex` is
     /// used, since it only `try_lock` the mutex.
     pub(crate) fn try_grow(&self, new_len: usize, f: impl FnMut() -> T) -> Result<(), ()> {
-        if new_len != 0 || self.len() < new_len {
+        if self.len() < new_len {
             if let Some(_guard) = self.mutex.try_lock() {
                 self.do_grow(new_len, f);
                 Ok(())
