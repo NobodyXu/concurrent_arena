@@ -59,9 +59,8 @@ impl<T: Clone> Arcs<T> {
 
     fn do_grow(&self, new_len: usize, f: impl FnMut() -> T) {
         let slice = self.as_slice();
-        let slice_ref = &*slice;
 
-        let old_len = slice_ref.len();
+        let old_len = slice.len();
         if old_len >= new_len {
             return;
         }
@@ -92,7 +91,7 @@ impl<T: Clone> Arcs<T> {
         impl<T: Clone, F: FnMut() -> T> ExactSizeIterator for Initializer<'_, T, F> {}
 
         let arc =
-            ThinArc::from_header_and_iter((), Initializer(slice_ref.iter(), new_len - old_len, f));
+            ThinArc::from_header_and_iter((), Initializer(slice.iter(), new_len - old_len, f));
 
         let _old = self.array.swap(Some(arc));
 

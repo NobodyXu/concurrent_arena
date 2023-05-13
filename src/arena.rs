@@ -5,7 +5,7 @@ use core::cmp::min;
 /// * `LEN` - Number of elements stored per bucket.
 ///    Must be less than or equal to `u32::MAX`, divisible by
 ///   `usize::BITS` and it must not be `0`.
-/// * `BITARRAY_LEN` - Number of usize in the bitmap per bucket.
+/// * `BITARRAY_LEN` - Number of [`usize`] in the bitmap per bucket.
 ///   Must be equal to `LEN / usize::BITS`.
 ///
 ///   For best performance, try to set this to number of CPUs that are going
@@ -102,7 +102,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
     ///
     /// This function is lock-free.
     pub fn try_insert(&self, mut value: T) -> Result<ArenaArc<T, BITARRAY_LEN, LEN>, (T, u32)> {
-        let slice = &*self.buckets.as_slice();
+        let slice = self.buckets.as_slice();
         let len = slice.len();
 
         debug_assert!(len <= Self::max_buckets() as usize);
