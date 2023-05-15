@@ -1,7 +1,12 @@
 name: Miri
 
 env:
+  RUSTFLAGS: -Dwarnings
+  RUST_BACKTRACE: 1
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+  CARGO_UNSTABLE_SPARSE_REGISTRY: true
 
 on:
   push:
@@ -10,6 +15,11 @@ on:
       - 'README.md'
       - 'LICENSE'
       - '.gitignore'
+  #pull_request:
+  #  paths-ignore:
+  #    - 'README.md'
+  #    - 'LICENSE'
+  #    - '.gitignore'
 
 jobs:
   miri:
@@ -17,21 +27,21 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ github.event.repository.name }}-${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.toml') }}-v2
     - name: Install latest nightly
-      uses: actions-rs/toolchain@v1
+      run: |
+        rustup toolchain install nightly --component miri --no-self-update --profile minimal
+        rustup default nightly
+    - uses: taiki-e/install-action@v2
       with:
-          toolchain: nightly
-          components: miri
+        tool: cargo-nextest
+
+    - uses: Swatinem/rust-cache@v2
     - name: Miri
-      run: cargo +nightly miri test -- --nocapture
+      run: |
+        cargo +nightly miri \
+            nextest run \
+            -Z build-std \
+            --target "$(rustc -vV | grep host | cut -d : -f 2 | tr -d '[:space:]')" \
+            --release
       env:
         MIRIFLAGS: -Zmiri-disable-isolation
