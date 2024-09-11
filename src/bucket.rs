@@ -365,7 +365,7 @@ mod tests {
 
     use rayon::prelude::*;
 
-    type Bucket<T> = super::Bucket<T, 1, { usize::BITS }>;
+    type Bucket<T> = super::Bucket<T, 1, { usize::BITS as usize }>;
 
     #[test]
     fn test_basic() {
