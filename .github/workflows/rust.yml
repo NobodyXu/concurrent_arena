@@ -45,9 +45,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: taiki-e/install-action@cross
+    - uses: taiki-e/install-action@v2
+      with:
+        tool: nextest,cross
     - uses: Swatinem/rust-cache@v2
-    - run: cross test --target i686-unknown-linux-musl
+    - run: cargo nextest run --target i686-unknown-linux-musl
+      env:
+        CARGO_TARGET_I686_UNKNOWN_LINUX_MUSL_RUNNER: cross
       
   test:
     runs-on: ubuntu-latest
