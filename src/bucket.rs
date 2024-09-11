@@ -365,13 +365,14 @@ mod tests {
 
     use rayon::prelude::*;
 
-    type Bucket<T> = super::Bucket<T, 1, { usize::BITS as usize }>;
+    const LEN: usize = usize::BITS as usize;
+    type Bucket<T> = super::Bucket<T, 1, { LEN }>;
 
     #[test]
     fn test_basic() {
         let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
 
-        let arcs: Vec<_> = (0..64)
+        let arcs: Vec<_> = (0..LEN)
             .into_par_iter()
             .map(|i| {
                 let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
@@ -411,7 +412,7 @@ mod tests {
     fn test_clone() {
         let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
 
-        let arcs: Vec<_> = (0..64)
+        let arcs: Vec<_> = (0..LEN)
             .into_par_iter()
             .map(|i| {
                 let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
@@ -448,7 +449,7 @@ mod tests {
     fn test_reuse() {
         let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
 
-        let mut arcs: Vec<_> = (0..64)
+        let mut arcs: Vec<_> = (0..LEN)
             .into_par_iter()
             .map(|i| {
                 let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
@@ -471,7 +472,7 @@ mod tests {
             assert_eq!(ArenaArc::strong_count(&arc), 1);
         }
 
-        let new_arcs: Vec<_> = (64..64 + 32)
+        let new_arcs: Vec<_> = (LEN..LEN + LEN / 2)
             .into_par_iter()
             .map(|i| {
                 let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
@@ -492,7 +493,7 @@ mod tests {
         let handle2 = spawn(move || {
             new_arcs
                 .into_par_iter()
-                .zip(64..64 + 32)
+                .zip(LEN..LEN + LEN / 2)
                 .for_each(|(each, i)| {
                     assert_eq!((*each) as usize, i);
                 });
@@ -506,7 +507,7 @@ mod tests {
     fn test_reuse2() {
         let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
 
-        let mut arcs: Vec<_> = (0..64)
+        let mut arcs: Vec<_> = (0..LEN)
             .into_par_iter()
             .map(|i| {
                 let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
@@ -525,7 +526,7 @@ mod tests {
             assert_eq!(ArenaArc::strong_count(&arc), 1);
         }
 
-        let new_arcs: Vec<_> = (64..64 + 32)
+        let new_arcs: Vec<_> = (LEN..LEN + LEN / 2)
             .into_par_iter()
             .map(|i| {
                 let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
@@ -546,7 +547,7 @@ mod tests {
         let handle2 = spawn(move || {
             new_arcs
                 .into_par_iter()
-                .zip(64..64 + 32)
+                .zip(LEN..LEN + LEN / 2)
                 .for_each(|(each, i)| {
                     assert_eq!((*each) as usize, i);
                 });
@@ -560,7 +561,7 @@ mod tests {
     fn test_concurrent_remove() {
         let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
 
-        let arcs: Vec<_> = (0..64)
+        let arcs: Vec<_> = (0..LEN)
             .into_par_iter()
             .map(|i| {
                 let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
@@ -587,7 +588,7 @@ mod tests {
     fn test_concurrent_remove2() {
         let bucket: Arc<Bucket<u32>> = Arc::new(Bucket::new());
 
-        let arcs: Vec<_> = (0..64)
+        let arcs: Vec<_> = (0..LEN)
             .into_par_iter()
             .map(|i| {
                 let arc = Bucket::try_insert(&bucket, 0, i).unwrap();
@@ -611,7 +612,7 @@ mod tests {
     fn realworld_test() {
         let bucket: Arc<Bucket<Mutex<u32>>> = Arc::new(Bucket::new());
 
-        (0..64).into_par_iter().for_each(|i| {
+        (0..LEN).into_par_iter().for_each(|i| {
             let arc = Bucket::try_insert(&bucket, 0, Mutex::new(i)).unwrap();
 
             assert_eq!(ArenaArc::strong_count(&arc), 2);
