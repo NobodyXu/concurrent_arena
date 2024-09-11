@@ -26,10 +26,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Install rust 1.58
+    - name: Install rust 1.63
       run: |
-        rustup toolchain install 1.58 --no-self-update --profile minimal
-        rustup default 1.58
+        rustup toolchain install 1.63 nightly --no-self-update --profile minimal
+        rustup default 1.63
+
+    - name: Use minimal versions
+      run: cargo +nightly update -Zminimal-versions
 
     - uses: Swatinem/rust-cache@v2
     - name: Check msrv
