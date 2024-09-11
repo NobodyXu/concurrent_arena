@@ -495,7 +495,7 @@ mod tests {
                 .into_par_iter()
                 .zip(LEN..LEN + LEN / 2)
                 .for_each(|(each, i)| {
-                    assert_eq!((*each) as usize, i);
+                    assert_eq!(*each, i);
                 });
         });
 
@@ -549,7 +549,7 @@ mod tests {
                 .into_par_iter()
                 .zip(LEN..LEN + LEN / 2)
                 .for_each(|(each, i)| {
-                    assert_eq!((*each) as usize, i);
+                    assert_eq!(*each, i);
                 });
         });
 
