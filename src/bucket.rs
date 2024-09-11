@@ -365,8 +365,8 @@ mod tests {
 
     use rayon::prelude::*;
 
-    const LEN: usize = usize::BITS as usize;
-    type Bucket<T> = super::Bucket<T, 1, { LEN }>;
+    const LEN: usize = usize::BITS
+    type Bucket<T> = super::Bucket<T, 1, { LEN as usize }>;
 
     #[test]
     fn test_basic() {
