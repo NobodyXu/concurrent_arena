@@ -252,14 +252,14 @@ mod tests {
 
     #[test]
     fn test_new() {
-        let arena: Arena<_, 1, 64> = Arena::new();
+        let arena: Arena<_, 1, usize::BITS> = Arena::new();
         let slot = ArenaArc::slot(&arena.insert(()));
         assert_eq!(ArenaArc::slot(&arena.remove(slot).unwrap()), slot);
     }
 
     #[test]
     fn test_with_capacity() {
-        let arena: Arena<_, 1, 64> = Arena::with_capacity(0);
+        let arena: Arena<_, 1, usize::BITS> = Arena::with_capacity(0);
         let slot = ArenaArc::slot(&arena.insert(()));
         assert_eq!(ArenaArc::slot(&arena.remove(slot).unwrap()), slot);
     }
@@ -285,7 +285,7 @@ mod tests {
         use rayon::spawn;
         use std::sync::Arc;
 
-        let arena: Arc<Arena<Mutex<u32>, 1, 64>> = Arc::new(Arena::with_capacity(0));
+        let arena: Arc<Arena<Mutex<u32>, 1, usize::BITS>> = Arc::new(Arena::with_capacity(0));
 
         (0..u16::MAX).into_par_iter().for_each(|i| {
             let i = i as u32;
