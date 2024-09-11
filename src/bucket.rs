@@ -1,6 +1,6 @@
 use super::{bitmap::BitMap, Arc, OptionExt, SliceExt};
 
-use core::{cell::UnsafeCell, hint::spin_loop, ops::Deref};
+use core::{array, cell::UnsafeCell, hint::spin_loop, ops::Deref};
 use std::sync::atomic::{fence, AtomicU8, Ordering};
 
 const REMOVED_MASK: u8 = 1 << (u8::BITS - 1);
@@ -14,8 +14,6 @@ struct Entry<T> {
 }
 
 impl<T> Entry<T> {
-    const EMPTY: Entry<T> = Entry::new();
-
     const fn new() -> Self {
         Self {
             counter: AtomicU8::new(0),
@@ -72,7 +70,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Bucket<T, BITA
     pub(crate) fn new() -> Self {
         Self {
             bitset: BitMap::new(),
-            entries: [Entry::EMPTY; LEN],
+            entries: array::from_fn(|_| Entry::new()),
         }
     }
 
