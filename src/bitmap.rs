@@ -1,6 +1,9 @@
 use super::{thread_id::get_thread_id, SliceExt};
 
-use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
+use std::{
+    array,
+    sync::atomic::{AtomicUsize, Ordering::Relaxed},
+};
 
 fn compare_exchange(atomic: &AtomicUsize, curr: usize, new: usize) -> Result<(), usize> {
     atomic
@@ -14,13 +17,7 @@ pub(crate) struct BitMap<const BITARRAY_LEN: usize>([AtomicUsize; BITARRAY_LEN])
 
 impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
     pub(crate) fn new() -> Self {
-        // AtomicUsize is not Copyable, rustc suggests workaround
-        // by creating a const variable.
-
-        #[allow(clippy::declare_interior_mutable_const)]
-        const EMPTY_USIZE: AtomicUsize = AtomicUsize::new(0);
-
-        Self([EMPTY_USIZE; BITARRAY_LEN])
+        Self(array::from_fn(|_| AtomicUsize::new(0)))
     }
 
     /// # Safety
