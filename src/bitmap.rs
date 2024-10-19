@@ -17,7 +17,7 @@ pub(crate) struct BitMap<const BITARRAY_LEN: usize>([AtomicUsize; BITARRAY_LEN])
 
 impl<const BITARRAY_LEN: usize> BitMap<BITARRAY_LEN> {
     pub(crate) fn new() -> Self {
-        Self(array::from_fn(|| AtomicUsize::new(0)))
+        Self(array::from_fn(|_| AtomicUsize::new(0)))
     }
 
     /// # Safety
