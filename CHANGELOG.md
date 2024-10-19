@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.10](https://github.com/NobodyXu/concurrent_arena/compare/v0.1.9...v0.1.10) - 2024-10-19
+
+### Other
+
+- Fix BitMap::new clippy: Do not create constant for type with interior… ([#22](https://github.com/NobodyXu/concurrent_arena/pull/22))
+- Use exponential growth for O(1) amortizied complexity ([#20](https://github.com/NobodyXu/concurrent_arena/pull/20))
+
 ## [0.1.9](https://github.com/NobodyXu/concurrent_arena/compare/v0.1.8...v0.1.9) - 2024-09-11
 
 ### Other
