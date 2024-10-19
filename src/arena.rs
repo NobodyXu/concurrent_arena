@@ -171,7 +171,10 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
                         // reservation.
                         //
                         // We can simply restart operation, waiting for it to be done.
-                        self.try_reserve(len + 4);
+                        //
+                        // Grow by 1.5 exponential to have amoritized O(1), adding +4 more in case
+                        // there's only one element (1 * 3 / 2 evaluaes to 1 in rust).
+                        self.try_reserve(len * 3 / 2 + 4);
                     }
                 }
             }
