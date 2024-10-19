@@ -1,6 +1,6 @@
-use super::{array, thread_id::get_thread_id, SliceExt};
+use super::{thread_id::get_thread_id, SliceExt};
 
-use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
+use std::{array, sync::atomic::{AtomicUsize, Ordering::Relaxed}};
 
 fn compare_exchange(atomic: &AtomicUsize, curr: usize, new: usize) -> Result<(), usize> {
     atomic
