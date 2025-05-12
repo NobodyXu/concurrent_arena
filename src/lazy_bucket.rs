@@ -12,7 +12,7 @@ use std::{
 #[derive(Debug)]
 struct LinkedBucket {
     bucket: Bucket,
-    next: Arc<LinkedBucket>,
+    next: Option<Arc<LinkedBucket>>,
 }
 
 #[derive(Debug)]
@@ -26,7 +26,6 @@ impl LazyBucket {
     pub const fn new() -> Self {
         Self {
             mutex: Mutex::new(()),
-            length: AtomicU32::new(0),
             head: AtomicPtr::new(null_mut()),
         }
     }
