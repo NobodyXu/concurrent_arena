@@ -10,19 +10,19 @@ use std::{
 };
 
 #[derive(Debug)]
-struct LinkedBucket {
+struct BucketNode {
     bucket: Bucket,
-    next: Option<Arc<LinkedBucket>>,
+    next: Option<Arc<BucketNode>>,
 }
 
 #[derive(Debug)]
-pub(crate) struct LazyBucket {
+pub(crate) struct LinkedBucket {
     mutex: Mutex<()>,
     /// Atomic Arc
-    head: AtomicPtr<LinkedBucket>,
+    head: AtomicPtr<BucketNode>,
 }
 
-impl LazyBucket {
+impl LinkedBucket {
     pub const fn new() -> Self {
         Self {
             mutex: Mutex::new(()),
