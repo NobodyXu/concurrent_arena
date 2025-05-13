@@ -3,13 +3,12 @@ use super::{arcs::Arcs, bucket::Bucket, thread_id::get_thread_id, Arc, ArenaArc}
 use core::cmp::min;
 
 /// * `LEN` - Number of elements stored per bucket.
-///  Must be less than or equal to `u32::MAX`, divisible by
-///  `usize::BITS` and it must not be `0`.
+///   Must be less than or equal to `u32::MAX`, divisible by
+///   `usize::BITS` and it must not be `0`.
 /// * `BITARRAY_LEN` - Number of [`usize`] in the bitmap per bucket.
-///  Must be equal to `LEN / usize::BITS`.
-///
-///  For best performance, try to set this to number of CPUs that are going
-///  to access `Arena` concurrently.
+///   Must be equal to `LEN / usize::BITS`.
+///   For best performance, try to set this to number of CPUs that are going
+///   to access `Arena` concurrently.
 ///
 /// `Arena` stores the elements in buckets to ensure that the address
 /// for elements are stable while improving efficiency.
