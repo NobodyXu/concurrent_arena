@@ -64,17 +64,19 @@ impl LinkedBucket {
             return;
         }
 
-        let mut head = self.take_head();
-
-        for index in len..new_len {
-            debug_assert_eq!(index - 1, head.map(|node| node.index).unwrap_or_default());
+        let head = (len..new_len)
+            .fold(
+                self.take_head(),
+                |head, index| {
+                    debug_assert_eq!(index - 1, head.map(|node| node.index).unwrap_or_default());
             
-            head = Some(Arc::new(BucketNode {
-                index,
-                bucket: Bucket::new(),
-                next: head,
-            }));
-        }
+                    Some(Arc::new(BucketNode {
+                        index,
+                        bucket: Bucket::new(),
+                        next: head,
+                    }))
+                },
+            );
 
         // TODO: Relax this order
         self.head.store(head.map(Arc::into_raw).unwrap_or_default() as *mut BucketNode, Ordering::AcqRel);
