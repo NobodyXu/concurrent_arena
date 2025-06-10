@@ -28,7 +28,7 @@ use super::{arcs::Arcs, bucket::Bucket, thread_id::get_thread_id, Arc, ArenaArc}
 /// If you provides `Arena` with invalid `LEM` or `BITARRAY_LEN`, then your
 /// code will panic at runtime:
 ///
-/// ```rust,should_panic
+/// ```rust,compile_fail
 /// use concurrent_arena::*;
 /// let arena = Arena::<u32, 1, 100>::new();
 /// ```
