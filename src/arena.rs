@@ -69,7 +69,7 @@ const fn check_const_generics<const BITARRAY_LEN: usize, const LEN: usize>() {
 }
 
 impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
-    const _: () = check_const_generics::<BITARRAY_LEN, LEN>();
+    const _CONST_CHECK: () = check_const_generics::<BITARRAY_LEN, LEN>();
 
     /// Maximum buckets `Arena` can have.
     pub const fn max_buckets() -> u32 {
@@ -84,7 +84,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
     }
 
     pub fn with_capacity(cap: u32) -> Self {
-        let cap = min(cap, Self::max_buckets());
+        let cap = cap.min(Self::max_buckets());
         let buckets = Arcs::new();
 
         buckets.grow(cap as usize, Arc::default);
