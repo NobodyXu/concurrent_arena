@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.11](https://github.com/NobodyXu/concurrent_arena/compare/v0.1.10...v0.1.11) - 2025-06-10
+
+### Other
+
+- Constify LEN/BITARRAY_LEN checking ([#23](https://github.com/NobodyXu/concurrent_arena/pull/23))
+
 ## [0.1.10](https://github.com/NobodyXu/concurrent_arena/compare/v0.1.9...v0.1.10) - 2024-10-19
 
 ### Other
