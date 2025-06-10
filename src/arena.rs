@@ -1,9 +1,7 @@
 use super::{arcs::Arcs, bucket::Bucket, thread_id::get_thread_id, Arc, ArenaArc};
 
-use core::cmp::min;
-
 /// * `LEN` - Number of elements stored per bucket.
-///    Must be less than or equal to `u32::MAX`, divisible by
+///   Must be less than or equal to `u32::MAX`, divisible by
 ///   `usize::BITS` and it must not be `0`.
 /// * `BITARRAY_LEN` - Number of [`usize`] in the bitmap per bucket.
 ///   Must be equal to `LEN / usize::BITS`.
@@ -30,7 +28,7 @@ use core::cmp::min;
 /// If you provides `Arena` with invalid `LEM` or `BITARRAY_LEN`, then your
 /// code will panic at runtime:
 ///
-/// ```rust,should_panic
+/// ```rust,compile_fail
 /// use concurrent_arena::*;
 /// let arena = Arena::<u32, 1, 100>::new();
 /// ```
@@ -73,7 +71,7 @@ const fn check_const_generics<const BITARRAY_LEN: usize, const LEN: usize>() {
 impl<T, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITARRAY_LEN, LEN> {
     /// Maximum buckets `Arena` can have.
     pub const fn max_buckets() -> u32 {
-        check_const_generics::<BITARRAY_LEN, LEN>();
+        const { check_const_generics::<BITARRAY_LEN, LEN>() };
 
         u32::MAX / (LEN as u32)
     }
@@ -86,9 +84,9 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
     }
 
     pub fn with_capacity(cap: u32) -> Self {
-        check_const_generics::<BITARRAY_LEN, LEN>();
+        const { check_const_generics::<BITARRAY_LEN, LEN>() };
 
-        let cap = min(cap, Self::max_buckets());
+        let cap = cap.min(Self::max_buckets());
         let buckets = Arcs::new();
 
         buckets.grow(cap as usize, Arc::default);
@@ -136,7 +134,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
             return true;
         }
 
-        let new_len = min(new_len, Self::max_buckets());
+        let new_len = new_len.min(Self::max_buckets());
         self.buckets
             .try_grow(new_len as usize, Arc::default)
             .is_ok()
@@ -145,7 +143,7 @@ impl<T: Send + Sync, const BITARRAY_LEN: usize, const LEN: usize> Arena<T, BITAR
     /// Reserve `min(new_len, Self::max_buckets())` buckets.
     pub fn reserve(&self, new_len: u32) {
         if new_len != 0 {
-            let new_len = min(new_len, Self::max_buckets());
+            let new_len = new_len.min(Self::max_buckets());
             self.buckets.grow(new_len as usize, Arc::default)
         }
     }

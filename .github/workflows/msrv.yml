@@ -26,10 +26,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Install rust 1.63
+    - name: Install rust 1.79
       run: |
-        rustup toolchain install 1.63 nightly --no-self-update --profile minimal
-        rustup default 1.63
+        rustup toolchain install 1.79 nightly --no-self-update --profile minimal
+        rustup default 1.79
 
     - name: Use minimal versions
       run: cargo +nightly update -Zminimal-versions

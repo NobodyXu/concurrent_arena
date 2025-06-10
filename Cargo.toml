@@ -2,7 +2,7 @@
 name = "concurrent_arena"
 version = "0.1.10"
 edition = "2018"
-rust-version = "1.63"
+rust-version = "1.79"
 
 license = "MIT"
 description = "u32 concurrent insertion/removal arena that returns ArenaArc"
