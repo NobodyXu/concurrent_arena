@@ -31,7 +31,7 @@ jobs:
       run: |
         rustup toolchain install nightly --component miri --no-self-update --profile minimal
         rustup default nightly
-    - uses: taiki-e/install-action@v2
+    - uses: taiki-e/install-action@v2.85.2
       with:
         tool: cargo-nextest
 
