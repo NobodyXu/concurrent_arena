@@ -45,7 +45,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - uses: taiki-e/install-action@v2.85.2
+    - uses: taiki-e/install-action@v2.86.3
       with:
         tool: nextest
     - run: rustup target add i686-unknown-linux-musl
