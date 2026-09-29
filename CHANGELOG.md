@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.12](https://github.com/NobodyXu/concurrent_arena/compare/v0.1.11...v0.1.12) - 2026-09-29
+
+### Other
+
+- Bump taiki-e/install-action from 2.85.2 to 2.87.20 ([#62](https://github.com/NobodyXu/concurrent_arena/pull/62))
+- Bump taiki-e/install-action from 2 to 2.85.2 ([#32](https://github.com/NobodyXu/concurrent_arena/pull/32))
+- Bump actions/checkout from 6 to 7 ([#30](https://github.com/NobodyXu/concurrent_arena/pull/30))
+- Bump actions/checkout from 5 to 6 ([#29](https://github.com/NobodyXu/concurrent_arena/pull/29))
+- Bump actions/checkout from 4 to 5 ([#27](https://github.com/NobodyXu/concurrent_arena/pull/27))
+
 ## [0.1.11](https://github.com/NobodyXu/concurrent_arena/compare/v0.1.10...v0.1.11) - 2025-06-10
 
 ### Other
