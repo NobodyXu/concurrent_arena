@@ -15,7 +15,7 @@ categories = ["concurrency"]
 thread-sanitizer = []
 
 [dependencies]
-parking_lot = "0.12.0"
+parking_lot = "0.13.0"
 triomphe = { version = "0.1.5", features = ["arc-swap"] }
 arc-swap = "1.5.0"
 
