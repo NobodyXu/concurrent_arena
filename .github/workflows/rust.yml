@@ -87,7 +87,12 @@ jobs:
 
     - uses: Swatinem/rust-cache@v2
     - name: Run tests
-      run: cargo +nightly test
+      # Pass --target explicitly so RUSTFLAGS are not applied to host
+      # artifacts: proc-macros (e.g. rustversion via arc-swap) can't be
+      # built with sanitizers enabled.
+      run: |
+        cargo +nightly test \
+                --target "$(rustc -vV | grep host | cut -d : -f 2 | tr -d '[:space:]')"
       env:
         RUSTFLAGS: -Zsanitizer=address ${{ env.RUSTFLAGS }}
         RUSTDOCFLAGS: -Zsanitizer=address ${{ env.RUSTFLAGS }}
