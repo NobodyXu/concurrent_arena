@@ -612,38 +612,52 @@ mod tests {
     fn realworld_test() {
         let bucket: Arc<Bucket<Mutex<u32>>> = Arc::new(Bucket::new());
 
-        (0..LEN).into_par_iter().for_each(|i| {
-            let arc = Bucket::try_insert(&bucket, 0, Mutex::new(i)).unwrap();
+        let handles: Vec<_> = (0..LEN)
+            .into_par_iter()
+            .map(|i| {
+                let arc = Bucket::try_insert(&bucket, 0, Mutex::new(i)).unwrap();
 
-            assert_eq!(ArenaArc::strong_count(&arc), 2);
-            assert_eq!(*arc.lock(), i);
+                assert_eq!(ArenaArc::strong_count(&arc), 2);
+                assert_eq!(*arc.lock(), i);
 
-            let arc_cloned = arc.clone();
+                let arc_cloned = arc.clone();
 
-            let f = move |mut guard: MutexGuard<'_, u32>| {
-                if *guard == i {
-                    *guard = i + 1;
-                } else if *guard == i + 1 {
-                    *guard = i + 2;
-                } else {
-                    panic!("");
-                }
-            };
+                let f = move |mut guard: MutexGuard<'_, u32>| {
+                    if *guard == i {
+                        *guard = i + 1;
+                    } else if *guard == i + 1 {
+                        *guard = i + 2;
+                    } else {
+                        panic!("");
+                    }
+                };
 
-            let handle = spawn(move || {
-                sleep(Duration::from_micros(1));
+                let handle = spawn(move || {
+                    sleep(Duration::from_micros(1));
 
-                f(arc_cloned.lock());
-            });
+                    f(arc_cloned.lock());
+                });
 
-            spawn(move || {
-                sleep(Duration::from_micros(1));
-                f(arc.lock());
+                spawn(move || {
+                    sleep(Duration::from_micros(1));
+                    f(arc.lock());
 
-                handle.join().unwrap();
+                    handle.join().unwrap();
 
-                assert_eq!(*arc.lock(), i + 2);
-            });
-        });
+                    assert_eq!(*arc.lock(), i + 2);
+                })
+            })
+            .collect();
+
+        // Join every thread so that panics fail the test and all `ArenaArc`
+        // drops happen-before `bucket` is dropped here.
+        //
+        // Without this, the last reference may be released on this thread
+        // with no synchronisation ThreadSanitizer can see (triomphe uses an
+        // acquire fence, which TSan does not model), producing a false
+        // positive data race on deallocation.
+        for handle in handles {
+            handle.join().unwrap();
+        }
     }
 }
