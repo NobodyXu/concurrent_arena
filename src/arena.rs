@@ -60,7 +60,10 @@ const fn check_const_generics<const BITARRAY_LEN: usize, const LEN: usize>() {
         LEN <= (u32::MAX as usize),
         "LEN must be less than or equal to u32::MAX"
     );
-    assert!(LEN % bits == 0, "LEN must be divisible by usize::BITS");
+    assert!(
+        LEN.is_multiple_of(bits),
+        "LEN must be divisible by usize::BITS"
+    );
     assert!(LEN != 0, "LEN must not be 0");
     assert!(
         LEN / bits == BITARRAY_LEN,
