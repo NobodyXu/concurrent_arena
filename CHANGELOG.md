@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.13](https://github.com/NobodyXu/concurrent_arena/compare/v0.1.12...v0.1.13) - 2026-11-10
+
+### Other
+
+- Bump taiki-e/install-action from 2.87.29 to 2.90.2 ([#81](https://github.com/NobodyXu/concurrent_arena/pull/81))
+
 ## [0.1.12](https://github.com/NobodyXu/concurrent_arena/compare/v0.1.11...v0.1.12) - 2026-10-27
 
 ### Other
